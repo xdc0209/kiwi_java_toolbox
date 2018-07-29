@@ -1,0 +1,60 @@
+GC日志参数(适用于调试和生产，因为GC日志收集开销很小而且可以提供丰富的信息)：
+-XX:+PrintGCDetails                   输出GC的详细日志
+-XX:+PrintGCDateStamps                输出GC的时间戳(以日期的形式，如2013-05-04T21:53:59.234+0800)
+-XX:+PrintGCTimeStamps                输出GC的时间戳(以基准时间的形式，当程序启动开始计时)
+-XX:+PrintGCCause                     输出GC的原因
+-XX:+PrintHeapAtGC                    在进行GC的前后打印出堆的信息
+-XX:+PrintGCApplicationConcurrentTime 打印每次垃圾回收前,程序未中断的执行时间
+-XX:+PrintGCApplicationStoppedTime    垃圾回收期间程序暂停的时间
+-Xloggc:$APP_HOME/logs/gc.log         日志文件的输出路径
+-XX:+UseGCLogFileRotation             启用GC日志文件的自动转储(Since Java7)
+-XX:NumberOfGCLogFiles=10             GC日志文件的循环数目(Since Java7)
+-XX:GCLogFileSize=10M                 控制GC日志文件的大小(Since Java7)
+
+注意：
+-XX:+PrintGC包含-verbose:gc，-XX:+PrintGCDetails包含-XX:+PrintGC，因此，只要设置-XX:+PrintGCDetails就会自动带上-verbose:gc和-XX:+PrintGC。
+
+GC日志查看：
+2015-06-15T01:26:49.719+0800: [GC2015-06-15T01:26:49.719+0800: [DefNew: 4416K->512K(4928K), 0.0072604 secs] 4416K->2516K(15872K), 0.0073022 secs] [Times: user=0.01 sys=0.00, real=0.01 secs]
+2015-06-15T01:34:09.433+0800: [Full GC2015-06-15T01:34:09.433+0800: [Tenured: 174783K->174783K(174784K), 0.5130765 secs] 239130K->239130K(253440K), [Perm : 411K->411K(12288K)], 0.5131201 secs] [Times: user=0.52 sys=0.00, real=0.51 secs]
+[名称：GC前内存占用 -> GC后内存占用 (该区内存总大小)]
+
+概述：
+从垃圾回收器获取监控信息，是优化JVM的重要操作。收集垃圾回收器信息的最好办法就是收集日志。这个意味着通过HotSpot VM的命令行选项可以收集垃圾回收器的统计信息。
+开启垃圾回收器日志(即使在生产环境)是很好的主意，其实开启垃圾回收器的开销很小而且可以提供丰富的信息，这些信息和垃圾回收器应用事件或者JVM事件有关系。
+比如说：一个应用在运行过程中出现了一个比较长的暂停，如果有垃圾回收信息，就可以判断出是垃圾回收器引起的暂停还是应用进行的其他操作引起的暂停。
+
+可管理的JVM参数：
+一个常常被讨论的问题是在生产环境中GC日志是否应该开启。因为它所产生的开销通常都非常有限，因此我的答案是需要开启。但并不一定在启动JVM时就必须指定GC日志参数。
+HotSpot JVM有一类特别的参数叫做可管理的参数(java -XX:+PrintFlagsInitial | grep manageable)。对于这些参数，可以在运行时修改他们的值。我们这里所讨论的所有参数以及以“PrintGC”开头的参数都是可管理的参数。
+这样在任何时候我们都可以开启或是关闭GC日志。比如我们可以使用JDK自带的jinfo工具来设置这些参数，或者是通过JMX客户端调用HotSpotDiagnostic MXBean的setVMOption方法来设置这些参数。
+
+线上可配置如下：
+./java -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintGCCause -XX:+PrintHeapAtGC -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCApplicationStoppedTime -Xloggc:$APP_HOME/logs/gc.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=10M -version
+
+Full GC 触发机制汇总：
+  1)old gen空间不足；
+  2)perm gen空间不足；
+  3)minor gc时的悲观策略；
+  4)minor GC后在eden上分配内存仍然失败；
+  5)执行Heap Dump时；
+  6)外部调用System.gc，可通过-XX:+DisableExplicitGC来禁止。
+
+
+=====================================================================================
+其他GC参数:
+uintx GCHeapFreeLimit                           = 2               {product}
+Heap空闲空间的最低比例下限，默认是2，当超过下限时，会抛出OutOfMemory(HeapSpace)的异常
+
+uintx GCTimeLimit                               = 98              {product}
+花费在GC上的时间上限，默认是98，当超过上限时，会抛出OutOfMemory(HeapSpace)的异常
+
+uintx GCTimeRatio                               = 99              {product}
+通过-XX:GCTimeRatio=<value>我们告诉JVM吞吐量要达到的目标值。 更准确地说，-XX:GCTimeRatio=N指定目标应用程序线程的执行时间(与总的程序执行时间)达到N/(N+1)的目标比值。
+例如，通过-XX:GCTimeRatio=9我们要求应用程序线程在整个执行时间中至少9/10是活动的(因此，GC线程占用其余1/10)。 基于运行时的测量，JVM将会尝试修改堆和GC设置以期达到目标吞吐量。
+-XX:GCTimeRatio的默认值是99，也就是说，应用程序线程应该运行至少99%的总执行时间。
+
+bool UseGCOverheadLimit                        = true            {product}
+这个是JDK6新添的错误类型。这个hotspot VM1.6定义的一个策略，是一种保护机制，通过计算GC时间来预测是否需要OOM了，提前抛出异常，防止OOM的发生。
+官方的定义是：并行/并发回收器在GC回收时间过长会抛出OutOfMemoryError(过长的定义是超过98%的时间用来GC并回收了不到2%的堆内存，用来避免内存过小造成应用不能正常工作。我在JSP导大Excel的时候碰到过。最终解决方案是，关闭该功能。
+使用-XX:-UseGCOverheadLimit，预测OOM有啥用呢？虽然可能不能最终拯救你的应用，但是可以在挂掉前做最后的挣扎，比如数据保存和保存现场(Heap Dump)，当然这个策略会带来比如加载某一个大内存时频繁OOM。

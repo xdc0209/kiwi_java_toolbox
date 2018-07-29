@@ -1,0 +1,35 @@
+一、JVM整体介绍
+对技术先要有整体的把握，再深入到具体的细节。
+
+Java学习官网
+https://docs.oracle.com/javase/7/docs/
+
+JDK Tooks官网
+https://docs.oracle.com/javase/7/docs/technotes/tools/index.html#troubleshoot
+
+JDK Tooks中文解释
+http://www.softown.cn/post/168.html
+
+JVM内存区域模型
+https://blog.csdn.net/java2000_wl/article/details/8009362
+
+堆分区划分
+https://www.tuicool.com/articles/juiIbiA
+
+HotSpot虚拟机GC算法采用分代收集算法1
+http://blog.chinaunix.net/xmlrpc.php?r=blog/article&uid=29632145&id=4616836
+
+HotSpot虚拟机GC算法采用分代收集算法2
+https://blog.csdn.net/java2000_wl/article/details/8038855
+
+Java内存之本地内存分析神器：NMT和pmap
+https://blog.csdn.net/jicahoo/article/details/50933469
+
+Java进程内存结构
+堆    Eden Space(伊甸园)、Survivor Space(幸存者区)、Tenured Gen(老年代-养老区)
+非堆  Code Cache(代码缓存区)、Perm Gen(永久代或叫方法区)、直接内存、JVM Stack(Java虚拟机栈)、Local Method Statck(本地方法栈)
+
+注意：Local Method Statck(本地方法栈)已经是本地内存(Native Memory)的范畴了，Java工具已无能为力，要使用C的工具。
+
+二、JDK常见工具介绍
+jconsole、jmc、jvisualvm

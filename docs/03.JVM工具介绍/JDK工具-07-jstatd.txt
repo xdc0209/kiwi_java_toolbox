@@ -1,0 +1,20 @@
+jstatd是一个RMI的server，它可以监控Hotspot的JVM的启动和结束，同时提供接口可以让远程机器连接到JVM。比如jps、jstat都可以通过jstatd来远程观察JVM的运行情况。默认端口1099。
+
+下面我们来讲解如何利用visualvm对远程的主机进行监控
+==========================================================================
+(1) 首先，我们可以在用户目录下的任何地方(比如说：用户根目录，或者是jdk根目录)新建一个名称为jstatd.all.policy的文件，文件内容如下：
+grant codebase "file:${java.home}/../lib/tools.jar" {
+  permission java.security.AllPermission;
+};
+
+这是安全策略文件，因为jdk对jvm做了jaas的安全检测，所以我们必须设置一些策略，使得jstatd被允许作网络操作
+
+(2) 新建完文件后，我们给这个文件赋予执行权限，命令如下：
+chmod 755 jstatd.all.policy
+
+(3) 启动jstatd服务(jstatd服务的默认端口为1099)：
+jstatd -J-Djava.rmi.server.hostname=192.168.1.100 -J-Djava.security.policy=/home/jstatd.all.policy
+
+其中，-J选项中的值都会传给java。
+
+记住jstatd.all.policy文件必须为绝对路径，防止出现java.security.AccessControlException: access denied (java.util.PropertyPermission java.rmi.server.ignoreSubClasses write)错误。

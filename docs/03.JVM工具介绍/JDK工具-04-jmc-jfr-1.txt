@@ -1,0 +1,73 @@
+参考：http://blog.csdn.net/albertfly/article/details/51533265
+参考：http://coderbee.net/index.php/jvm/20150406/1188
+参考：http://coderbee.net/index.php/jvm/20150408/1201
+参考：http://www.importnew.com/13346.html
+参考：http://www.cnblogs.com/grefr/p/6087934.html
+参考：http://www.tuicool.com/articles/UvEBRnA
+参考：http://hirt.se/blog/
+参考：http://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/memleaks001.html
+参考：https://docs.oracle.com/javacomponents/jmc-5-4/jfr-runtime-guide/run.htm#JFRUH176
+参考：http://stackoverflow.com/questions/32589840/java-flight-recorder-options-not-working-and-file-is-stored-only-in-the-end-of-t
+参考：http://www.infoq.com/cn/news/2013/10/misson-control-flight-recorder
+参考：http://rockiee281.github.io/java/2016/11/25/java8-Flight-Recorder%E5%88%9D%E6%8E%A2
+参考：https://docs.oracle.com/javase/8/docs/technotes/tools/unix/java.html
+参考：https://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/tooldescr004.html
+参考：http://java-performance.info/oracle-java-mission-control-overview/
+参考：http://www.rowkey.me/blog/2016/11/16/java-trouble-shooting/
+
+
+====================================================================================
+Flight Recorder使用的缓存问题：
+Flight Recorder记录JVM的事件数据，但是是记录在堆外(off-heap)，因此它并不会影响内存特性和垃圾收集。当它被配置成持久化数据的时候，它会周期性地倾倒(dump)到一个文件中，这个文件也是临时的，不是最终的jfr文件，可以使用jmc或者jcmd转储以获得jfr文件。
+
+收集的数据主要包含4种类型的事件：
+“瞬间(instant)”，在事件发生时进行记录；
+“可请求的(requestable)”，它们会被轮循；
+“持续(duration)”，表示一个时间间隔的度量；
+“定时的(timed)”，它们和“持续”一样，但是对过滤数据应用了阀值。
+
+有两个预定义的记录模式：
+“连续性(continuous)”，它的目的是始终运行；
+“剖析(profiling)”，它会收集更多的数据以便进行短期分析。但是无论如何开销始终都非常低，除非使用了自定义事件模板，并且开启很多类型事件记录。
+
+有两个预定义的事件模板(默认的模板位于$JAVA_HOME/lib/jfr文件夹)：
+default，一个低开销的设置，用于连续录制。
+profile，收集更多数据，主要用于性能剖析录制。
+
+开启JFR功能:
+只是指明开启了JFR，对JVM没有任何影响。
+
+运行JFR任务：
+运行一个JFR任务，开始记录JVM事件。可以同时启动多个任务，用于根据事件模板不同启动多个不同的任务。注意：如果两个任务中有重复的事件类型，JFR会共享数据，减小消耗。
+
+
+====================================================================================
+JMC的飞行记录器可用于：
+1. 性能调优
+飞行记录--代码--热点方法
+飞行记录--线程--热点线程
+
+显示线程栈的行号
+右键菜单--帧的判别方式--行号
+
+2. 定位内存泄露
+飞行记录--内存--分配--新TLAB中的分配、TLAB外部的分配
+注意：只要对象被创建，不管最终是否被回收，飞行记录都会记录。
+
+3. 定位IO问题
+飞行记录--I/O--文件读取、文件写入
+
+
+====================================================================================
+摘自：https://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/tooldescr004.html
+启动飞行记录的方法：
+1. 使用jmc，图形界面点点就行，就不细讲了。
+
+2. 使用jcmd，参考"JDK工具-04-jmc-jfr-2.txt"。
+
+3. 使用java参数：
+(1)固定时长模式
+java -XX:+UnlockCommercialFeatures -XX:+FlightRecorder -XX:StartFlightRecording=delay=20s,duration=60s,name=myrecording,filename=C:\TEMP\myrecording.jfr,settings=profile MyApp
+
+(2)持续记录模式
+java -XX:+UnlockCommercialFeatures -XX:+FlightRecorder -XX:FlightRecorderOptions=defaultrecording=true,disk=true,repository=/tmp,maxage=6h,maxsize=100m,settings=profile MyApp

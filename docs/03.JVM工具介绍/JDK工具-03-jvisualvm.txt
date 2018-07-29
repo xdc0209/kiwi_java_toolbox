@@ -1,0 +1,36 @@
+VisualVM是一个集成多个JDK命令行工具的可视化工具。VisualVM基于NetBeans平台开发，它具备了插件扩展功能的特性，通过插件的扩展，可用于显示虚拟机进程及进程的配置和环境信息(jps，jinfo)，监视应用程序的CPU、GC、堆、方法区及线程的信息(jstat、jstack)等。VisualVM在JDK/bin目录下。
+
+jvisualvm功能包括：
+概述、监视、线程、抽样器。
+
+推荐插件：
+VisualVM-MBeans
+VisualVM-BufferMonitor
+Visual GC
+Threads Inspector
+BTrace Workbench
+
+远程连接的方法
+===========================================================================================
+1. jmx连接：
+在java的启动参数中指定jmx的参数:(这个没有鉴权和加密，请勿生产环境使用。生产环境请使用安全的配置。)
+JAVA_OPTS="$JAVA_OPTS -Djava.rmi.server.hostname=192.168.1.100
+-Dcom.sun.management.jmxremote.port=8888
+-Dcom.sun.management.jmxremote.ssl=false
+-Dcom.sun.management.jmxremote.authenticate=false"
+
+注意：
+用hostname -i查看是否为127.0.0.1，这步非常重要，否则会连接失败。如果是，必须要配置-Djava.rmi.server.hostname
+比如我的配置为-Djava.rmi.server.hostname=192.168.1.100，而不需要修改hosts文件，修改此文件还可能影响到其他程序。
+
+2. jstatd连接：
+(1) vi $JAVA_HOME/jre/lib/security/java.policy
+增加下列行
+grant codebase "file:${java.home}/../lib/tools.jar" {
+  permission java.security.AllPermission;
+};
+
+(2) 然后启动jstatd并且不要关闭
+jstatd -J-Djava.rmi.server.hostname=192.168.1.100 -p 1099 -J-Djava.security.policy=$JAVA_HOME/jre/lib/security/jstatd.all.policy -J-Dcom.sun.management.jmxremote.port=8888 -J-Dcom.sun.management.jmxremote.ssl=false -J-Dcom.sun.management.jmxremote.authenticate=false
+
+(3) 使用VisualVM进行连接

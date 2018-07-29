@@ -1,0 +1,24 @@
+jtop
+    在排查线上问题的时候，我们经常使用jstat、jstack、jmap查看GC、内存、线程的信息，但是有时候我们需要获取一个整体的信息来帮助我们快速定位，类似Linux中自带的top命令，简单而全面的系统信息，在网上找了些资料，发现之前有人写了个jtop的工具，能够全面获取java应用的信息，一看作者，原来是阿里的同事，原理是使用了java中的MBean，借这个机会，把MBean的东西简单了解一下。
+
+命令：
+java -jar jtop.jar [options]<pid>[<interval>[<count>]]
+    -size <B|K|M|G|H>             Size, case insensitive (default: B, H for human)
+    -thread <N>                   Thread Top N (default: 5)
+    -stack <N>                    Stacktrace Top N (default: 8)
+    -excludes                     Excludes (string.contains)
+    -includes                     Includes (string.contains, excludes than includes)
+    --color                       Display color (default: off)
+    --sortmem                     Sort by memory allocted (default: off)
+    --summaryoff                  Do not display summary (default: off)
+    --advanced                    Do display like 'top' (default: off)
+
+作用：
+获取内存、线程、GC、高CPU占用线程的栈信息
+
+常见用法：
+1. 显示Java进程23115的CPU的top5线程，间隔2秒，打印10次。
+/opt/kiwi_world/jdk-1.8.0_151/bin/java -jar jtop.jar -size H -thread 5 -stack 100 --color 23115 2000 10
+
+2. 作用与1类似，展示效果同top，不滚屏，不断刷新屏幕信息。
+/opt/kiwi_world/jdk-1.8.0_151/bin/java -jar jtop.jar -size H -thread 5 -stack 100 --color --advanced 23115 2000

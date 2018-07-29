@@ -1,0 +1,86 @@
+参数配置和理解
+
+1. JVM参数分固定参数和非固定参数
+
+   1)固定参数
+     如: -Xmx,-Xms,-Xmn,-Xss.
+
+   2)非固定参数
+     如:
+     -XX:+<option>         启用选项
+     -XX:-<option>         不启用选项
+     -XX:<option>=<number> 给选项设置一个数字类型值，可跟单位，例如 128k, 2g
+     -XX:<option>=<string> 给选项设置一个字符串值，例如-XX:HeapDumpPath=$APP_HOME/serviceability/heap_dump.hprof
+
+   3)常用的内存区域调节参数
+     -server 表示为服务器端，会提供很多服务器端默认的配置，如并行回收，而服务器上一般这个参数都是默认的，所以都是可以省掉，与之对应的还有一个-client参数，一般在64位机器上，JVM是默认启动-server参数，也就是默认启动并行GC的，但是是ParallelGC而不是ParallelOldGC，两者算法不同(后面会简单说明下)，而比较特殊的是windows 32位上默认是-client，这两个的区别不仅仅是默认的参数不一样，在JDK包下的JRE包下一般会包含client和server包，下面分别对应启动的动态链接库，而真正看到的java、javac等相关命令指示一个启动导向，它只是根据命令找到对应的JVM并传入JVM中进行启动，也就是看到的java.exe这些文件并不是JVM；说了这么多，最终总结一下就是，-server和-client就是完全不同的两套VM，一个用于桌面应用，一个用于服务器的。JVM如果不指定-server或-client选项，JVM会在启动的时候根据硬件环境判断以server模式启动还是以client模式启动(适用于Java 5及以上版本)。JVM工作在server模式可以大大提高性能，但应用的启动会比client模式慢大概10%。当该参数不指定时，虚拟机启动检测主机是否为服务器，如果是，则以server模式启动，否则以client模式启动，Java 5检测的根据是至少2个CPU和最低2GB内存。当JVM用于启动GUI界面的交互应用时适合于使用client模式，当JVM用于运行服务器后台程序时建议用server模式。如果内存比较大，对性能要求苛刻的场合，建议运行在server模式下，在这种模式下，虚拟机通过使用很大的内存来换取更高的性能。如果内存比较小，但对性能要求不高的场合，建议运行在client模式下，在这种模式下，虚拟机使用有限的内存，来正常运行。这种方式适合于小内存，短期运行的程序，牺牲速度，换取内存。
+     -Xmx 为Heap区域的最大值，默认(MaxHeapFreeRatio参数可以调整)空余堆内存大于70%时，JVM会减少堆直到 -Xms的最小限制。
+     -Xms 为Heap区域的初始值，默认为物理内存的1/64(<1GB)，默认(MinHeapFreeRatio参数可以调整)空余堆内存小于40%时，JVM就会增大堆直到-Xmx的最大限制。线上环境需要与-Xmx设置为一致，否则capacity的值会来回飘动，飘得你心旷神怡，你懂的。
+     -Xmn 为Heap区域中年轻代大小。整个JVM内存大小=年轻代大小 + 年老代大小 + 持久代大小。持久代一般固定大小为64m，所以增大年轻代后，将会减小年老代大小。此值对系统性能影响较大，Sun官方推荐配置为整个堆的3/8。
+     -Xss(或-ss) 这个其实也是可以默认的，如果你真的觉得有设置的必要，你就改下吧，1.5以后是1M的默认大小(指一个线程的native空间)，如果代码不多，可以设置小点来让系统可以接受更大的内存。注意，还有一个参数是-XX:ThreadStackSize，这两个参数在设置的过程中如果都设置是有冲突的，一般按照JVM常理来说，谁设置在后面，就以谁为主，但是最后发现如果是在1.6以上的版本，-Xss设置在后面的确都是以-Xss为主，但是要是-XX:ThreadStackSize设置在后面，主线程还是为-Xss为主，而其它线程以-XX:ThreadStackSize为主，主线程做了一个特殊判定处理；单独设置都是以本身为主，-Xss不设置也不会采用其默认值，除非两个都不设置会采用-Xss的默认值。另外这个参数针对于hotspot的vm，在IBM的JVM中，还有一个参数为-Xoss，主要原因是IBM在对栈的处理上有操作数栈和方法栈等各种不同的栈种类，而hotspot不管是什么栈都放在一个私有的线程内部的，不区分是什么栈，所以只需要设置一个参数，而IBM的J9不是这样的；有关栈上的细节，后续我们有机会专门写文章来说明。
+     -XX:PermSize与-XX:MaxPermSize两个包含了class的装载的位置，或者说是方法区(但不是本地方法区)，在Hotspot默认情况下为64M，注意全世界的JVM只有hostpot的VM才有Perm的区域，或者说只有hotspot才有对用户可以设置的这块区域，其他的JVM都没有，其实并不是没有这块区域，而是这块区域没有让用户来设置，其实这块区域本身也不应该让用户来设置，我们也没有一个明确的说法这块空间必须要设置多大，都是拍脑袋设置一个数字，如果发布到线上看下如果用得比较多，就再多点，如果用的少，就减少点，而这块区域和性能关键没有多大关系，只要能装下就OK，并且时不时会因为Perm不够而导致Full GC，所以交给开发者来调节这个参数不知道是怎么想的；所以Oracle将在新一代JVM中将这个区域彻底删掉，也就是对用户透明，G1的如果真正稳定起来，以后JVM的启动参数将会非常简单，而且理论上管理再大的内存也是没有问题的，其实G1(garbage first，一种基于region的垃圾收集回收器)已经在hotspot中开始有所试用，不过目前效果不好，还不如CMS呢，所以只是试用，G1已经作为ORACLE对JVM研发的最高重点，CMS自现在最高版本后也不再有新功能(可以修改bug)，该项目已经进行5年，尚未发布正式版，CMS是四五年前发布的正式版，但是是最近一两年才开始稳定，而G1的复杂性将会远远超越CMS，所以要真正使用上G1还有待考察，全世界目前只有IBM J9真正实现了G1论文中提到的思想(论文于05年左右发表)，IBM已经将J9应用于websphere中，但是并不代表这是全世界最好的JVM，全世界最好的JVM是Azul(无停顿垃圾回收算法和一个零开销的诊断/监控工具)，几乎可以说这个JVM是没有暂停的，在全世界很多顶尖级的公司使用，不过价格非常贵，不能直接使用，目前这个JVM的主导者在研究JRockit，而目前hotspot和JRockit都是Oracle的，所以他们可能会合并，所以我们应该对JVM的性能充满信心。
+     也就是说你常用的情况下只需要设置4个参数就OK了，除非你的应用有些特殊，否则不要乱改。
+
+2. JVM可设置的参数和默认值
+
+   1)-XX:+PrintCommandLineFlags
+     打印出JVM初始化完毕后所有跟最初的默认值不同的参数及它们的值，JDK1.5后支持。
+     这个参数让JVM打印出那些已经被用户或者JVM设置过的详细的XX参数的名称和值。
+     线上建议打开，可以看到自己改了哪些值。
+
+   2)-XX:+PrintFlagsFinal
+     显示所有可设置的参数及"参数处理"后的默认值。参数本身只从JDK6 U21后支持。
+     可是查看不同版本默认值，以及是否设置成功.输出的信息中"="表示使用的是初始默认值，而":="表示使用的不是初始默认值。
+     如:JDK6/7 -XX:+MaxTenuringThreshold的默认值都是15，但是在使用CMS收集器后，JDK6默认4，JDK7默认6.
+
+     root@linux:~# java -version
+     java version "1.6.0_27-ea"
+     root@linux:~# java -XX:+PrintFlagsInitial | grep MaxTenuringThreshold
+     intx MaxTenuringThreshold = 15 {product}
+     root@linux:~# java -XX:+PrintFlagsFinal -XX:+UseConcMarkSweepGC | grep MaxTenuringThreshold
+     intx MaxTenuringThreshold := 4 {product}
+
+     root@linux:~# java -version
+     java version "1.7.0_45"
+     root@linux:~# java -XX:+PrintFlagsInitial | grep MaxTenuringThreshold
+     intx MaxTenuringThreshold = 15 {product}
+     root@linux:~# java -XX:+PrintFlagsFinal -XX:+UseConcMarkSweepGC | grep MaxTenuringThreshold
+     intx MaxTenuringThreshold := 6 {product}
+
+     root@linux:~# grep -inr --color ":=" . # 搜索修改过的参数的方法。##
+
+   3)-XX:+PrintFlagsInitial
+     在"参数处理"之前所有可设置的参数及它们的值，然后直接退出程序.
+     这里的"参数处理"指: 检查参数之间是否有冲突，通过ergonomics调整某些参数的值等.
+
+     root@linux:~# java -version
+     java version "1.6.0_27-ea"
+     root@linux:~# java -XX:+PrintFlagsInitial | grep UseCompressedOops
+     bool UseCompressedOops = false {lp64_product}
+     root@linux:~# java -XX:+PrintFlagsFinal | grep UseCompressedOops
+     bool UseCompressedOops := true {lp64_product}
+
+   4)总结
+     -XX:+PrintCommandLineFlags 可用于线上
+     -XX:+PrintFlagsFinal       可用于线上
+     -XX:+PrintFlagsInitial     仅用于测试
+
+     线上可配置如下：
+     ./java -XX:+PrintCommandLineFlags -XX:+PrintFlagsFinal -version
+
+3. 打开飞行记录功能，并开启默认记录配置(In JDK7u4 and above)
+
+   -XX:+UnlockCommercialFeatures -XX:+FlightRecorder -XX:FlightRecorderOptions=defaultrecording=true,disk=true,repository=/tmp,maxage=6h,maxsize=100m,settings=profile
+
+4. 推荐设置(GC日志参数也是推荐开启的，为避免重复，以下列表省略没写，详情见"JVM启动参数-GC日志参数.txt")
+
+   -XX:+UnlockDiagnosticVMOptions                            # 避免OSGi环境下并发加载类的死锁问题。##
+   -XX:+UnsyncloadClass                                      # 避免OSGi环境下并发加载类的死锁问题。##
+   -XX:-OmitStackTraceInFastThrow                            # 强制要求JVM始终抛出含堆栈的异常。##
+   -XX:ErrorFile=$APP_HOME/serviceability/error.log          # 致命错误出现的时候，JVM生成了hs_err_pid<pid>.log这样的文件，其中往往包含了虚拟机崩溃原因的重要信息。默认情况下文件是创建在工作目录下的(如果没权限创建的话JVM 会尝试把文件写到/tmp这样的临时目录下面去)，当然，文件格式和路径也可以通过参数指定，比如：java -XX:ErrorFile=/var/log/java/java_error%p.log##
+   -XX:+HeapDumpOnOutOfMemoryError                           # 一定要打开。这个参数只会生效一次，不会每次OOM的时候都做Heap Dump。大家可以想像一下，如果是代码问题导致连续的OOM，那连续做Heap Dump也没必要，于是JVM里控制这个参数只会在第一次发生OOM的时候做一次Heap Dump。##
+   -XX:HeapDumpPath=$APP_HOME/serviceability/heap_dump.hprof # 堆栈转储路径。##
+
+5. 其他
+
+   抛出异常NoSuchMethodError，代表这个类型确实存在，但是一个不正确的版本被加载了。为了解决这个问题我们可以使用'-verbose:class'来判断该JVM加载的到底是哪个版本。

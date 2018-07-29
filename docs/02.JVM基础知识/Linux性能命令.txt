@@ -1,0 +1,68 @@
+1. 查看机器的load值：
+命令：
+    top、uptime和w
+    w命令，比uptime命令增加了可以查看其他用户的登录信息，还有正在执行的命令。
+解释：
+    11:14:02     当前时间
+    318 days     从上次reboot到现在的开机时间
+    1 user       有一个用户登录到机器上
+    load average 最近 1分钟，5分钟，15分钟平均load
+
+2. CPU利用率与Load Average的区别？
+CPU利用率，是对一个时间段内CPU使用状况的统计，通过这个指标可以看出在某一个时间段内CPU被占用的情况，如果CPU被占用时间很高，那么就需要考虑CPU是否已经处于超负荷运作，长期超负荷运作对于机器本身来说是一种损害，因此必须将CPU的利用率控制在一定的比例下，以保证机器的正常运作。
+Load Average是CPU的Load，它所包含的信息不是CPU的使用率状况，而是在一段时间内CPU正在处理以及等待CPU处理的进程数之和的统计信息，也就是CPU使用队列的长度的统计信息。
+那么CPU利用率与Load Average对于性能测试的意义有什么区别呢？实际上，CPU利用率反映的是CPU被使用的情况，当CPU长期处于被使用而没有得到足够的时间休息间歇，那么对于CPU硬件来说是一种超负荷的运作，需要调整使用频度。而Load Average却从另一个角度来展现对于CPU使用状态的描述，Load Average越高说明对于CPU资源的竞争越激烈，CPU资源比较短缺。对于资源的申请和维护其实也是需要很大的成本，所以在这种高Average Load的情况下CPU资源的长期“热竞争”也是对于硬件的一种损害。
+
+3. 如何评估性能需求中合理的Load Average？
+一般来说，Load Average是与机器内核数有关的。以一个单核的机器为例，load=0.5表示CPU还有一半的资源可以处理其他的线程请求，load=1表示CPU所有的资源都在处理请求，没有剩余的资源可以利用了，而load=2则表示CPU已经超负荷运作，另外还有一倍的线程正在等待处理。所以，对于单核机器来说，理想状态下，Load Average要小于1。同理，对于双核处理器来说，Load Average要小于2。结论是：多核处理器中，你的Load Average不应该高于处理器核心的总数量。
+
+
+=====================================================================
+查看CPU信息(型号)
+# cat /proc/cpuinfo | grep 'model name' | cut -d: -f2 | uniq -c
+      8  Intel(R) Xeon(R) CPU            E5410   @ 2.33GHz
+输出解释：看到有8个逻辑CPU, 也知道了CPU型号。
+
+# cat /proc/cpuinfo | grep 'physical id' | uniq -c
+      4 physical id      : 0
+      4 physical id      : 1
+输出解释：说明实际上是两颗4核的CPU。
+
+# getconf LONG_BIT
+   32
+输出解释：说明当前CPU运行在32bit模式下, 但不代表CPU不支持64bit。
+
+# cat /proc/cpuinfo | grep flags | grep ' lm ' | wc -l
+   8
+输出解释：结果大于0, 说明支持64bit计算. lm指long mode, 支持lm则是64bit。
+
+=====================================================================
+查看内存信息
+# cat /proc/meminfo | grep MemTotal
+MemTotal:     32941268 kB
+
+硬盘大小
+# fdisk -l | grep 'Disk /dev'
+Disk /dev/sda: 1887.4 GB, 1887436800000 bytes
+Disk /dev/sdb: 1860.5 GB, 1860593254400 bytes
+
+Swap空间
+# grep SwapTotal /proc/meminfo
+SwapTotal:    10223608 kB
+
+查看网卡信息
+# dmesg | grep -i eth
+
+查看当前操作系统内核信息
+# uname -a
+Linux euis1 2.6.9-55.ELsmp #1 SMP Fri Apr 20 17:03:35 EDT 2007 i686
+
+查看当前操作系统发行版信息
+# cat /etc/issue | grep Linux
+Red Hat Enterprise Linux AS release 4 (Nahant Update 5)
+
+查看操作系统版本
+# lsb_release -a
+
+查看机器型号
+# dmidecode | grep "Product Name"

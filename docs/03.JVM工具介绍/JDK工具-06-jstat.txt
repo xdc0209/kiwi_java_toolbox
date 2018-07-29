@@ -1,0 +1,110 @@
+jstat：虚拟机统计信息监视工具
+jstat(JVM Statistics Monitoring Tool)，用于监视虚拟机各种运行状态信息的命令行工具。可以显示本地或远程虚拟机进程中的类装载、内存、垃圾收集、JIT编译等运行数据，是运行期定位虚拟机性能问题的首选工具。
+命令格式: jstat -<option> <vmid> [<interval> [<count>]]
+样例：假如需要每250毫秒查询一次进程2764垃圾收集的状况，一共查询20次：jstat -gc 2764 250ms 20
+
+
+选项主要分为3类：类装载、垃圾收集和运行期编译状况。
+jstat工具主要选项：
+-class            监视类的装载数量、卸载数量、总空间及类装载所耗费的时间
+-gc               监视java堆状况，包括Eden区、两个survivor区、老年代、永久代等的容量、已用空间、GC时间合计等信息
+-gccapacity       与-gc略同，但输出主要关注java堆各个区域使用到的最大和最小空间
+-gcutil           与-gc略同，但输出主要关注已使用空间占总空间的百分比
+-gccause          与gcutil功能一样，但会额外输出导致上一次GC产生的原因
+-gcnew            监视新生代GC状况
+-gcnewcapacity    与-gcnew略同，输出主要关注使用到的最大和最小空间
+-gcold            监视老年代GC状况
+-gcoldcapacity    与-gcold略同，输出主要关注使用到的最大和最小空间
+-gcpermcapacity   输出永久使用到的最大和最小空间
+-compiler         输出JIT编译器编译过的方法、耗时等信息
+-printcompilation 输出已经被JIT编译的方法
+
+
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jstat -gc 28291 1000 3
+S0C    S1C     S0U    S1U   EC        EU       OC         OU        MC      MU      CCSC   CCSU       YGC   YGCT    FGC    FGCT     GCT
+1344.0 1344.0  0.0    0.0   10880.0   4231.2   26952.0    16170.6   26880.0 26086.1 3328.0 3152.2     64    0.147   4      0.166    0.312
+1344.0 1344.0  0.0    0.0   10880.0   4231.2   26952.0    16170.6   26880.0 26086.1 3328.0 3152.2     64    0.147   4      0.166    0.312
+1344.0 1344.0  0.0    0.0   10880.0   4231.2   26952.0    16170.6   26880.0 26086.1 3328.0 3152.2     64    0.147   4      0.166    0.312
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+输出内容含义如下(中文)：
+S0C  新生代存活区Survivor0区容量(单位KB)。
+S1C  新生代存活区Survivor1区容量(单位KB)。
+S0U  新生代存活区Survivor0区占用(单位KB)。
+S1U  新生代存活区Survivor1区占用(单位KB)。
+EC   新生代伊甸园区Eden区容量(单位KB)。
+EU   新生代伊甸园区Eden区占用(单位KB)。
+OC   老年代Old区占用容量(单位KB)。
+OU   老年代Old区占用占用(单位KB)。
+PC   永久代Permanent区容量(单位KB)。(注：before java 1.8)
+PU   永久代Permanent区占用(单位KB)。(注：before java 1.8)
+MC   元数据空间容量(单位KB)。       (注：java 1.8)
+MU   元数据空间占用(单位KB)。       (注：java 1.8)
+CCSC 压缩类空间容量(单位KB)。       (注：java 1.8)
+CCSU 压缩类空间占用(单位KB)。       (注：java 1.8)
+YGC  应用程序启动后发生Young GC的次数。
+YGCT 应用程序启动后发生Young GC所用的时间(单位秒)。
+FGC  应用程序启动后发生Full GC的次数。
+FGCT 应用程序启动后发生Full GC所用的时间(单位秒)。
+GCT  应用程序启动后发生Young GC和Full GC所用的时间(单位秒)。
+
+输出内容含义如下(英文)：
+S0C  Current survivor space 0 capacity (KB).
+S1C  Current survivor space 1 capacity (KB).
+S0U  Current survivor space 0 utilization (KB).
+S1U  Current survivor space 1 utilization (KB).
+EC   Current eden space capacity (KB).
+EU   Eden space utilization (KB).
+OC   Current old space capacity (KB).
+OU   Old space utilization (KB).
+PC   Current permanent space capacity (KB). (Tips: before java 1.8)
+PU   Permanent space utilization (KB).      (Tips: before java 1.8)
+MC   Metaspace capacity (kB).               (Tips: java 1.8)
+MU   Metacspace utilization (kB).           (Tips: java 1.8)
+CCSC Compressed class space capacity (kB).  (Tips: java 1.8)
+CCSU Compressed class space used (kB).      (Tips: java 1.8)
+YGC  Number of young generation GC Events.
+YGCT Young generation garbage collection time.
+FGC  Number of full GC events.
+FGCT Full garbage collection time.
+GCT  Total garbage collection time.
+
+
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jstat -gccause 28291 1000 3
+  S0     S1    E      O      M      CCS       YGC   YGCT      FGC  FGCT     GCT   LGCC                   GCC
+  0.00   0.00  41.14  60.00  97.05  94.72     64    0.147     4    0.166    0.312 Heap Dump Initiated GC No GC
+  0.00   0.00  41.22  60.00  97.05  94.72     64    0.147     4    0.166    0.312 Heap Dump Initiated GC No GC
+  0.00   0.00  41.22  60.00  97.05  94.72     64    0.147     4    0.166    0.312 Heap Dump Initiated GC No GC
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+输出内容含义如下(中文)：
+S0   新生代存活区Survivor0区占用百分比。
+S1   新生代存活区Survivor1区占用百分比。
+E    新生代伊甸园区Eden区占用百分比。
+O    老年代Old区占用百分比。
+P    永久代Permanent区占用百分比。(注：before java 1.8)
+M    元数据空间占用百分比。       (注：java 1.8)
+CCS  压缩类空间占用百分比。       (注：java 1.8)
+YGC  应用程序启动后发生Young GC的次数。
+YGCT 应用程序启动后发生Young GC所用的时间(单位秒)。
+FGC  应用程序启动后发生Full GC的次数。
+FGCT 应用程序启动后发生Full GC所用的时间(单位秒)。
+GCT  应用程序启动后发生Young GC和Full GC所用的时间(单位秒)。
+LGCC 上次GC的原因。
+GCC  当前GC的原因。
+
+输出内容含义如下(英文)：
+S0   Survivor space 0 utilization as a percentage of the space's current capacity.
+S1   Survivor space 1 utilization as a percentage of the space's current capacity.
+E    Eden space utilization as a percentage of the space's current capacity.
+O    Old space utilization as a percentage of the space's current capacity.
+P    Permanent space utilization as a percentage of the space's current capacity.        (Tips: before java 1.8)
+M    Metaspace utilization as a percentage of the space's current capacity.              (Tips: java 1.8)
+CCS  Compressed class space utilization as a percentage of the space's current capacity. (Tips: java 1.8)
+YGC  Number of young generation GC events.
+YGCT Young generation garbage collection time.
+FGC  Number of full GC events.
+FGCT Full garbage collection time.
+GCT  Total garbage collection time.
+LGCC Cause of last Garbage Collection.
+GCC  Cause of current Garbage Collection.

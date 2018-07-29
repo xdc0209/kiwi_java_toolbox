@@ -1,0 +1,74 @@
+jinfo：Java信息查询配置工具
+jinfo的作用是实时地查看和调整虚拟机的各项参数，虽然使用Jps命令的-v参数可以查看虚拟机启动时显示指定的参数列表。但是如果想要知道没有被明确指出的系统默认值，就需要用到jinfo。
+Jinfo还能够修改一部分运行期间能够调整的虚拟机参数。
+
+注意1：很多运行参数是不能动态调整的，如果出现这种异常，说明不能调整：
+Exception in thread "main" java.io.IOException:Command failed in target VM
+
+注意2：其实可以查询出来哪些运行参数是可以动态调整的：
+java -XX:+PrintFlagsInitial | grep manageable
+
+一、命令概要
+用法：
+jinfo [ option ] pid
+选项：
+<no option>          打印命令行参数和系统属性
+-flags               打印命令行参数
+-flag <name>         to print the value of the named VM flag
+-flag [+|-]<name>    to enable or disable the named VM flag
+-flag <name>=<value> to set the named VM flag to the given value
+-sysprops            打印系统属性
+-h                   帮助
+
+二、命令执行结果
+(1) 帮助
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jinfo
+Usage:
+    jinfo [option] <pid>
+        (to connect to running process)
+    jinfo [option] <executable <core>
+        (to connect to a core file)
+    jinfo [option] [server_id@]<remote server IP or hostname>
+        (to connect to remote debug server)
+
+where <option> is one of:
+    -flag <name>         to print the value of the named VM flag
+    -flag [+|-]<name>    to enable or disable the named VM flag
+    -flag <name>=<value> to set the named VM flag to the given value
+    -flags               to print VM flags
+    -sysprops            to print Java system properties
+    <no option>          to print both of the above
+    -h | -help           to print this help message
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+(2) 查询所有标志
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jinfo -flags 28291
+Attaching to process ID 28291, please wait...
+Debugger attached successfully.
+Server compiler detected.
+JVM version is 25.151-b12
+Non-default VM flags: -XX:CICompilerCount=2 -XX:InitialHeapSize=12582912 -XX:MaxHeapSize=190840832 -XX:MaxNewSize=63569920 -XX:MinHeapDeltaBytes=196608 -XX:NewSize=4194304 -XX:OldSize=8388608 -XX:+UseCompressedClassPointers -XX:+UseCompressedOops -XX:+UseFastUnorderedTimeStamps
+Command line:  -Djava.awt.headless=true -Djava.io.tmpdir=/opt/kiwi_world/apache-activemq-5.11.1/tmp -Dactivemq.classpath=/opt/kiwi_world/apache-activemq-5.11.1/conf: -Dactivemq.home=/opt/kiwi_world/apache-activemq-5.11.1 -Dactivemq.base=/opt/kiwi_world/apache-activemq-5.11.1 -Dactivemq.conf=/opt/kiwi_world/apache-activemq-5.11.1/conf -Dactivemq.data=/opt/kiwi_world/apache-activemq-5.11.1/data
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+(3) 开启禁用开关类标志
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jinfo -flag PrintGCDetails 28291
+-XX:+PrintGCDetails
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jinfo -flag -PrintGCDetails 28291
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jinfo -flag PrintGCDetails 28291
+-XX:-PrintGCDetails
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jinfo -flag +PrintGCDetails 28291
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jinfo -flag PrintGCDetails 28291
+-XX:+PrintGCDetails
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+(4) 修改值类标志
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jinfo -flag HeapDumpPath 28291
+-XX:HeapDumpPath=/opt/kiwi_world/apache-activemq-5.11.1/data/heap_dump.hprof
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jinfo -flag HeapDumpPath=/home/heap_dump.hprof 28291
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jinfo -flag HeapDumpPath 28291
+-XX:HeapDumpPath=/home/heap_dump.hprof
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jinfo -flag HeapDumpPath=/opt/kiwi_world/apache-activemq-5.11.1/data/heap_dump.hprof 28291
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jinfo -flag HeapDumpPath 28291
+-XX:HeapDumpPath=/opt/kiwi_world/apache-activemq-5.11.1/data/heap_dump.hprof
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#

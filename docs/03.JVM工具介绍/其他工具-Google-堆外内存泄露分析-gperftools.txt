@@ -1,0 +1,85 @@
+参考：http://alexott.net/en/writings/prog-checking/GooglePT.html
+
+JVM学习-如何perftool工具定位堆外内存泄漏
+
+我们都知道JAVA的内存分为堆外内存与堆内内存。其中堆内内存的泄露因为本区域程序员可见可控，因此相对好定位；但是堆外内存，因为对程序员不可见等因素导致定位相当的艰难。
+这里介绍一款跟踪堆外内存分配的工具：google的preftool工具。
+
+1. 下载并安装gperftools：
+    (1)下载https://github.com/gperftools/gperftools
+    (2)上传到问题环境并解压
+    (3)./configure --enable-frame-pointers
+    (4)make
+    (5)make install
+
+2. 设置需要持续监控的进程。
+    注意：这里需要特别注意的是，在配置跟踪参数后的所有指令其调用的内存分配都会被监控，因此在需要跟踪的进程前加上声明，其后需要立即置空，避免统计其他进程，干扰分析。
+    修改启动Java进程的启动脚本，在启动Java命令前设置相应变量，启动后立即清理变量，一个启动脚本的样例如下：
+
+------------------------------------------------------------------------------------------------------------------
+    #内存检测模式。##
+    export HEAPCHECK=normal
+
+    #Linux预加载环境变量，使tcmalloc提供掉glibc的malloc，这样就能做一些统计了。##
+    export LD_PRELOAD=/usr/local/lib/libtcmalloc.so
+
+    #记录文件前缀，按照例子中设置，需保证目录已存在，最终记录的文件是：/tmp/gperftools.record.<pid>.编号.heap。##
+    export HEAPPROFILE=/tmp/gperftools.record
+
+    #新增有多少正在使用内存写一次文件(正在使用的内存是指未释放的内存，单位，字节，默认100M)。##
+    export HEAP_PROFILE_INUSE_INTERVAL=104857600
+
+    #新增多少申请内存写一次文件(是指申请的总内存，包括已经释放的，单位，字节，默认1G)。##
+    export HEAP_PROFILE_ALLOCATION_INTERVAL=1048576000
+
+    # 需要监控的进程。##
+    $JAVA_HOME/bin/java -jar $APP_JAR >/dev/null 2>&1 &
+
+    # 清理变量，避免统计其他进程，干扰分析。##
+    export LD_PRELOAD=""
+------------------------------------------------------------------------------------------------------------------
+
+3. 重启相关的进程，切换到生成的分析文件的目录，使用perftool分析：
+    pprof --text $JAVA_HOME/bin/java /tmp/gperftools.record.<pid>.编号.heap >/tmp/gperftools.record.<pid>.编号.heap.txt
+    将连续多次生成的record进行解析，拿到解析的文件后可以进行对比，就可以知道JVM底层那个native的函数一直在申请但是不释放。
+
+------------------------------------------------------------------------------------------------------------------
+    ##shell片段，批量分析所有文件。##
+    for heap in $(ls /tmp/gperftools.record.*.heap)
+    do
+        pprof --text $JAVA_HOME/bin/java $heap >$heap.txt
+    done
+------------------------------------------------------------------------------------------------------------------
+
+4. 生成文件解读
+    第一列代表这个函数调用本身直接使用了多少内存。
+    第二列表示第一列的百分比。
+    第三列是从第一行到当前行的所有第二列之和。
+    第四列表示这个函数调用自己直接使用加上所有子调用使用的内存总和。
+    第五列是第四列的百分比。
+
+    基本上只要知道这些，就能很好的掌握每一时刻程序运行内存使用情况了，并且对比不同时段的不同profile数据，可以分析出内存走向，进而定位热点和泄漏。
+
+    注意：第四列很重要，看看哪些占用过多，再在网上查查是否有相关的泄露资料。
+
+    Total: 48.0 MB
+        40.5  84.3%  84.3%     40.5  84.3% os::malloc@921040
+         5.4  11.3%  95.6%      5.4  11.3% updatewindow
+         1.2   2.5%  98.1%      1.2   2.5% inflateInit2_
+         0.6   1.3%  99.4%      0.6   1.3% readCEN
+         0.2   0.4%  99.8%      0.2   0.4% init
+         0.0   0.0%  99.8%      0.0   0.0% allocate_dtv
+         0.0   0.0%  99.9%      0.7   1.4% ZIP_Put_In_Cache0
+         0.0   0.0%  99.9%      0.0   0.0% _dl_new_object
+         0.0   0.0%  99.9%      0.0   0.0% __GI___strdup
+         0.0   0.0%  99.9%      1.2   2.5% Java_java_util_zip_Inflater_init
+         0.0   0.0% 100.0%      0.0   0.0% newEntry
+         0.0   0.0% 100.0%      0.0   0.0% read_alias_file
+         0.0   0.0% 100.0%      0.0   0.0% _dl_check_map_versions
+         0.0   0.0% 100.0%      0.0   0.0% __check_pf
+         0.0   0.0% 100.0%      0.0   0.0% _dl_map_object_deps
+
+5. 经验总结
+    Java程序内存泄露的定位步骤：
+    (1)使用jmap等JDK自带工具排查JVM自管理的堆与非堆内存是否正常，如果JVM自管理的内存出现问题，目前有很成熟的定位解决手段。
+    (2)如果JVM自管理的内存正常，则可能是JVM或程序调用的jni或系统库存在问题，可以使用goole perftool工具来定位JVM的堆外内存泄露。

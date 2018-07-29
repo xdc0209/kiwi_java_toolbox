@@ -1,0 +1,60 @@
+2018-04-17 12:21:52
+Full thread dump Java HotSpot(TM) 64-Bit Server VM (25.151-b12 mixed mode):
+
+"DestroyJavaVM" #10 prio=5 os_prio=0 tid=0x00007fd424007800 nid=0xc491 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"pool-1-thread-2" #9 prio=5 os_prio=0 tid=0x00007fd42414f800 nid=0xc49c waiting on condition [0x00007fd413594000]
+   java.lang.Thread.State: TIMED_WAITING (sleeping)
+	at java.lang.Thread.sleep(Native Method)
+	at com.xdc.basic.api.jvm.test.stub.OutOfMemoryTestStub.createStudentWithNoCache(OutOfMemoryTestStub.java:66)
+	at com.xdc.basic.api.jvm.test.stub.OutOfMemoryTestStub$2.run(OutOfMemoryTestStub.java:33)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+
+"Service Thread" #7 daemon prio=9 os_prio=0 tid=0x00007fd4240d9800 nid=0xc498 runnable [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"C1 CompilerThread1" #6 daemon prio=9 os_prio=0 tid=0x00007fd4240d6800 nid=0xc497 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"C2 CompilerThread0" #5 daemon prio=9 os_prio=0 tid=0x00007fd4240d4000 nid=0xc496 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Signal Dispatcher" #4 daemon prio=9 os_prio=0 tid=0x00007fd4240d2800 nid=0xc495 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Finalizer" #3 daemon prio=8 os_prio=0 tid=0x00007fd42409f800 nid=0xc494 in Object.wait() [0x00007fd413d17000]
+   java.lang.Thread.State: WAITING (on object monitor)
+	at java.lang.Object.wait(Native Method)
+	- waiting on <0x00000000f87b3d70> (a java.lang.ref.ReferenceQueue$Lock)
+	at java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:143)
+	- locked <0x00000000f87b3d70> (a java.lang.ref.ReferenceQueue$Lock)
+	at java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:164)
+	at java.lang.ref.Finalizer$FinalizerThread.run(Finalizer.java:209)
+
+"Reference Handler" #2 daemon prio=10 os_prio=0 tid=0x00007fd42409a800 nid=0xc493 in Object.wait() [0x00007fd413e18000]
+   java.lang.Thread.State: WAITING (on object monitor)
+	at java.lang.Object.wait(Native Method)
+	- waiting on <0x00000000f87b3f28> (a java.lang.ref.Reference$Lock)
+	at java.lang.Object.wait(Object.java:502)
+	at java.lang.ref.Reference.tryHandlePending(Reference.java:191)
+	- locked <0x00000000f87b3f28> (a java.lang.ref.Reference$Lock)
+	at java.lang.ref.Reference$ReferenceHandler.run(Reference.java:153)
+
+"VM Thread" os_prio=0 tid=0x00007fd424093000 nid=0xc492 runnable
+
+"VM Periodic Task Thread" os_prio=0 tid=0x00007fd4240dc800 nid=0xc499 waiting on condition
+
+JNI global references: 15
+
+Heap
+ def new generation   total 55872K, used 55871K [0x00000000f4a00000, 0x00000000f86a0000, 0x00000000f86a0000)
+  eden space 49664K, 100% used [0x00000000f4a00000, 0x00000000f7a80000, 0x00000000f7a80000)
+  from space 6208K,  99% used [0x00000000f7a80000, 0x00000000f808fff0, 0x00000000f8090000)
+  to   space 6208K,   0% used [0x00000000f8090000, 0x00000000f8090000, 0x00000000f86a0000)
+ tenured generation   total 124288K, used 124287K [0x00000000f86a0000, 0x0000000100000000, 0x0000000100000000)
+   the space 124288K,  99% used [0x00000000f86a0000, 0x00000000ffffffe8, 0x0000000100000000, 0x0000000100000000)
+ Metaspace       used 3031K, capacity 4516K, committed 4864K, reserved 1056768K
+  class space    used 338K, capacity 392K, committed 512K, reserved 1048576K

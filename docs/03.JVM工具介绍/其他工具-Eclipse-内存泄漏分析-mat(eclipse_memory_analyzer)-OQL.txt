@@ -1,0 +1,34 @@
+摘自：http://blog.csdn.net/yxz329130952/article/details/50288145
+
+OQL用来查询类的所有对象，注意OQL不能查询原始类型。Think of classes as tables, objects as rows, and fields as columns.
+
+(1)From
+类全路径：
+SELECT * FROM android.app.Activity
+
+正则表达式：
+SELECT * FROM "java\.lang\..*"
+
+基本类型数组或者对象数组，例如int[]或者Java.io.File[]：
+SELECT * FROM java.io.File[]
+
+对象的地址，例如0x2b7468c8：
+SELECT * FROM 0x2b7468c8
+
+对象的id，例如20815：
+SELECT * FROM 20815
+
+甚至可以是另外一个OQL的查询结果，以实现级联查询：
+SELECT * FROM (SELECT * FROM java.lang.Class c WHERE c implements org.eclipse.mat.snapshot.model.IClass)
+
+查询类及其子类的所有对象：
+SELECT * FROM INSTANCEOF android.app.Activity
+
+查询类的信息，而不是它的所有对象：
+SELECT * FROM OBJECTS com.example.leakdemo.LisenerLeakedActivity
+
+(2)WHERE
+支持的运算符号和关键字有：<=, >=, >, <, [ NOT ] LIKE, [ NOT ] IN, IMPLEMENTS, =, !=, AND, OR
+
+举个例子：
+SELECT * FROM com.example.leakdemo.LisenerLeakedActivity lla WHERE lla.mType = 1

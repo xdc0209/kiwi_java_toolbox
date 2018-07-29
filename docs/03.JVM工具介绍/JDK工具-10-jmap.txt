@@ -1,0 +1,183 @@
+jmap：Java内存映像工具
+jmap(Memory Map for Java)命令用于生成堆转储快照(一般称为heapdump或dump文件)。
+
+常用命令
+===================================================================================
+显示堆中对象统计信息的直方图，显示信息包括Java类、类实例对象数量、在内存中占有量的大小以及类的完整包名。可用于查询单例对象是否真的只生成了一个实例。
+$JAVA_HOME/bin/jmap -histo <pid>
+
+同上，但是只显示存活对象的情况。(注意：带有live参数时，JVM会先触发Young GC，再触发Full GC，然后再统计信息。因为Full GC会暂停应用，请权衡后用。)
+$JAVA_HOME/bin/jmap -histo:live <pid>
+
+显示jvm heap的情况，可以观测jvm配置参数，堆内存各区使用情况。堆内存分区：New Generation(Eden Space, From Space, To Space), tenured generation, Perm Generation
+$JAVA_HOME/bin/jmap -heap <pid>
+
+生成Java堆内存转储快照。之后使用mat查看。(注意：同histo，带有live参数时，JVM会先触发Young GC，再触发Full GC，在生成文件。)
+$JAVA_HOME/bin/jmap -dump:live,format=b,file=heap_dump.hprof <pid>
+
+命令执行结果
+===================================================================================
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jmap
+Usage:
+    jmap [option] <pid>
+        (to connect to running process)
+    jmap [option] <executable <core>
+        (to connect to a core file)
+    jmap [option] [server_id@]<remote server IP or hostname>
+        (to connect to remote debug server)
+
+where <option> is one of:
+    <none>               to print same info as Solaris pmap
+    -heap                to print java heap summary
+    -histo[:live]        to print histogram of java object heap; if the "live"
+                         suboption is specified, only count live objects
+    -clstats             to print class loader statistics
+    -finalizerinfo       to print information on objects awaiting finalization
+    -dump:<dump-options> to dump java heap in hprof binary format
+                         dump-options:
+                           live         dump only live objects; if not specified,
+                                        all objects in the heap are dumped.
+                           format=b     binary format
+                           file=<file>  dump heap to <file>
+                         Example: jmap -dump:live,format=b,file=heap.bin <pid>
+    -F                   force. Use with -dump:<dump-options> <pid> or -histo
+                         to force a heap dump or histogram when <pid> does not
+                         respond. The "live" suboption is not supported
+                         in this mode.
+    -h | -help           to print this help message
+    -J<flag>             to pass <flag> directly to the runtime system
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jmap 28291
+Attaching to process ID 28291, please wait...
+Debugger attached successfully.
+Server compiler detected.
+JVM version is 25.151-b12
+0x0000000000400000	7K	/opt/kiwi_world/jdk-1.8.0_151/bin/java
+0x00007f566b5d8000	90K	/opt/kiwi_world/jdk-1.8.0_151/jre/lib/amd64/libnio.so
+0x00007f566b7e9000	113K	/opt/kiwi_world/jdk-1.8.0_151/jre/lib/amd64/libnet.so
+0x00007f5688383000	49K	/opt/kiwi_world/jdk-1.8.0_151/jre/lib/amd64/libmanagement.so
+0x00007f569ccca000	125K	/opt/kiwi_world/jdk-1.8.0_151/jre/lib/amd64/libzip.so
+0x00007f569cee6000	220K	/opt/kiwi_world/jdk-1.8.0_151/jre/lib/amd64/libjava.so
+0x00007f569d112000	64K	/opt/kiwi_world/jdk-1.8.0_151/jre/lib/amd64/libverify.so
+0x00007f569d321000	41K	/lib64/librt-2.22.so
+0x00007f569d529000	1074K	/lib64/libm-2.22.so
+0x00007f569d826000	16615K	/opt/kiwi_world/jdk-1.8.0_151/jre/lib/amd64/server/libjvm.so
+0x00007f569e81d000	1880K	/lib64/libc-2.22.so
+0x00007f569ebc0000	18K	/lib64/libdl-2.22.so
+0x00007f569edc4000	101K	/opt/kiwi_world/jdk-1.8.0_151/lib/amd64/jli/libjli.so
+0x00007f569efda000	132K	/lib64/libpthread-2.22.so
+0x00007f569f1f7000	155K	/lib64/ld-2.22.so
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jmap -heap 28291
+Attaching to process ID 28291, please wait...
+Debugger attached successfully.
+Server compiler detected.
+JVM version is 25.151-b12
+
+using thread-local object allocation.
+Mark Sweep Compact GC
+
+Heap Configuration:
+   MinHeapFreeRatio         = 40
+   MaxHeapFreeRatio         = 70
+   MaxHeapSize              = 190840832 (182.0MB)
+   NewSize                  = 4194304 (4.0MB)
+   MaxNewSize               = 63569920 (60.625MB)
+   OldSize                  = 8388608 (8.0MB)
+   NewRatio                 = 2
+   SurvivorRatio            = 8
+   MetaspaceSize            = 21807104 (20.796875MB)
+   CompressedClassSpaceSize = 1073741824 (1024.0MB)
+   MaxMetaspaceSize         = 17592186044415 MB
+   G1HeapRegionSize         = 0 (0.0MB)
+
+Heap Usage:
+New Generation (Eden + 1 Survivor Space):
+   capacity = 12517376 (11.9375MB)
+   used     = 6839328 (6.522491455078125MB)
+   free     = 5678048 (5.415008544921875MB)
+   54.638671875% used
+Eden Space:
+   capacity = 11141120 (10.625MB)
+   used     = 6002312 (5.724250793457031MB)
+   free     = 5138808 (4.900749206542969MB)
+   53.87530158547794% used
+From Space:
+   capacity = 1376256 (1.3125MB)
+   used     = 837016 (0.7982406616210938MB)
+   free     = 539240 (0.5142593383789062MB)
+   60.818336123511905% used
+To Space:
+   capacity = 1376256 (1.3125MB)
+   used     = 0 (0.0MB)
+   free     = 1376256 (1.3125MB)
+   0.0% used
+tenured generation:
+   capacity = 27598848 (26.3203125MB)
+   used     = 16558728 (15.791633605957031MB)
+   free     = 11040120 (10.528678894042969MB)
+   59.997895564336595% used
+
+12876 interned Strings occupying 1736224 bytes.
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jmap -histo 28291
+
+ num     #instances         #bytes  class name
+----------------------------------------------
+   1:          3687        6756456  [B
+   2:         34088        6098128  [C
+   3:          5118        1273872  [I
+   4:         11089         893272  [Ljava.lang.Object;
+   5:         32264         774336  java.lang.String
+   6:          6138         687456  java.net.SocksSocketImpl
+   7:          4935         551592  java.lang.Class
+   8:          4982         438416  java.lang.reflect.Method
+   9:         27073         433168  java.lang.Object
+  10:         12800         409600  java.util.AbstractList$Itr
+  11:          3889         314248  [S
+  12:          9771         312672  java.util.concurrent.ConcurrentHashMap$Node
+  13:          8927         285664  java.util.concurrent.locks.AbstractQueuedSynchronizer$Node
+  14:          6641         265640  java.lang.ref.Finalizer
+  15:          6852         219264  java.lang.ref.WeakReference
+  16:          6132         196224  java.net.Socket
+  17:          4818         192720  java.util.HashMap$KeyIterator
+  18:          5682         181824  java.util.HashMap$Node
+  19:           899         174480  [Ljava.util.HashMap$Node;
+  20:          3655         146200  java.lang.ref.SoftReference
+...
+2020:             1             16  sun.reflect.GeneratedMethodAccessor4
+2021:             1             16  sun.reflect.GeneratedMethodAccessor5
+2022:             1             16  sun.reflect.GeneratedMethodAccessor6
+2023:             1             16  sun.reflect.GeneratedMethodAccessor7
+2024:             1             16  sun.reflect.GeneratedMethodAccessor8
+2025:             1             16  sun.reflect.GeneratedMethodAccessor9
+2026:             1             16  sun.reflect.GeneratedSerializationConstructorAccessor1
+2027:             1             16  sun.reflect.GeneratedSerializationConstructorAccessor2
+2028:             1             16  sun.reflect.GeneratedSerializationConstructorAccessor3
+2029:             1             16  sun.reflect.GeneratedSerializationConstructorAccessor4
+2030:             1             16  sun.reflect.GeneratedSerializationConstructorAccessor5
+2031:             1             16  sun.reflect.GeneratedSerializationConstructorAccessor6
+2032:             1             16  sun.reflect.GeneratedSerializationConstructorAccessor7
+2033:             1             16  sun.reflect.GeneratedSerializationConstructorAccessor8
+2034:             1             16  sun.reflect.ReflectionFactory
+2035:             1             16  sun.reflect.generics.tree.BooleanSignature
+2036:             1             16  sun.reflect.generics.tree.BottomSignature
+2037:             1             16  sun.reflect.generics.tree.VoidDescriptor
+2038:             1             16  sun.security.provider.NativePRNG
+2039:             1             16  sun.security.util.AlgorithmDecomposer
+2040:             1             16  sun.security.util.DisabledAlgorithmConstraints$Constraints
+2041:             1             16  sun.util.calendar.Gregorian
+2042:             1             16  sun.util.locale.provider.AuxLocaleProviderAdapter$NullProvider
+2043:             1             16  sun.util.locale.provider.CalendarDataUtility$CalendarWeekParameterGetter
+2044:             1             16  sun.util.locale.provider.SPILocaleProviderAdapter
+2045:             1             16  sun.util.locale.provider.TimeZoneNameUtility$TimeZoneNameGetter
+2046:             1             16  sun.util.resources.LocaleData
+2047:             1             16  sun.util.resources.LocaleData$LocaleDataResourceBundleControl
+Total        283427       23671880
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#

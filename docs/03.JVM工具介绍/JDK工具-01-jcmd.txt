@@ -1,0 +1,147 @@
+摘自：http://www.tuicool.com/articles/A3I77z
+
+问题描述
+为了分析和定位一个Java线上系统问题，我们需要查看JVM启动时的一些参数设置，例如：垃圾回收算法、堆大小等等。这些参数可能在启动脚本中明确指明，也可能采用默认值。在系统运行过程中其他人也许动态调整了系统参数。如何实时查看正在运行的JVM的参数呢？
+
+解决方案
+可以采用jcmd来查看正在运行的JVM的参数。jcmd从JDK 7开始引入的一个JVM诊断命令行工具，可以向运行中的JVM发送诊断命令。
+
+一、命令概要
+./jcmd -h
+./jcmd
+./jcmd 28291 help
+./jcmd 28291 VM.uptime
+./jcmd 28291 VM.flags
+./jcmd 28291 VM.system_properties
+./jcmd 28291 VM.command_line
+./jcmd 28291 Thread.print
+./jcmd 28291 GC.heap_dump heap_dump.hprof
+
+二、命令执行结果
+(1)帮助
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jcmd -h
+Usage: jcmd <pid | main class> <command ...|PerfCounter.print|-f file>
+   or: jcmd -l
+   or: jcmd -h
+
+  command must be a valid jcmd command for the selected jvm.
+  Use the command "help" to see which commands are available.
+  If the pid is 0, commands will be sent to all Java processes.
+  The main class argument will be used to match (either partially
+  or fully) the class used to start Java.
+  If no options are given, lists Java processes (same as -p).
+
+  PerfCounter.print display the counters exposed by this process
+  -f  read and execute commands from the file
+  -l  list JVM processes on the local machine
+  -h  this help
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+(2)查看当前Java进程列表
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jcmd
+28291 /opt/kiwi_world/apache-activemq-5.11.1/bin/activemq.jar start
+28623 sun.tools.jcmd.JCmd
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+(3)显示命令帮助
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jcmd 28291 help
+28291:
+The following commands are available:
+JFR.stop
+JFR.start
+JFR.dump
+JFR.check
+VM.native_memory
+VM.check_commercial_features
+VM.unlock_commercial_features
+ManagementAgent.stop
+ManagementAgent.start_local
+ManagementAgent.start
+GC.rotate_log
+Thread.print
+GC.class_stats
+GC.class_histogram
+GC.heap_dump
+GC.run_finalization
+GC.run
+VM.uptime
+VM.flags
+VM.system_properties
+VM.command_line
+VM.version
+help
+
+For more information about a specific command use 'help <command>'.
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+(4)获取虚拟机当前参数
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jcmd 28291 VM.flags
+28291:
+-XX:CICompilerCount=2 -XX:InitialHeapSize=12582912 -XX:MaxHeapSize=190840832 -XX:MaxNewSize=63569920 -XX:MinHeapDeltaBytes=196608 -XX:NewSize=4194304 -XX:OldSize=8388608 -XX:+UseCompressedClassPointers -XX:+UseCompressedOops -XX:+UseFastUnorderedTimeStamps
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+(5)获取虚拟机启动参数
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jcmd 28291 VM.command_line
+28291:
+VM Arguments:
+jvm_args: -Djava.awt.headless=true -Djava.io.tmpdir=/opt/kiwi_world/apache-activemq-5.11.1/tmp -Dactivemq.classpath=/opt/kiwi_world/apache-activemq-5.11.1/conf: -Dactivemq.home=/opt/kiwi_world/apache-activemq-5.11.1 -Dactivemq.base=/opt/kiwi_world/apache-activemq-5.11.1 -Dactivemq.conf=/opt/kiwi_world/apache-activemq-5.11.1/conf -Dactivemq.data=/opt/kiwi_world/apache-activemq-5.11.1/data
+java_command: /opt/kiwi_world/apache-activemq-5.11.1/bin/activemq.jar start
+java_class_path (initial): /opt/kiwi_world/apache-activemq-5.11.1/bin/activemq.jar
+Launcher Type: SUN_STANDARD
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+(6)获取虚拟机线程转储
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jcmd 28291 Thread.print
+28291:
+2018-04-16 22:03:51
+Full thread dump Java HotSpot(TM) 64-Bit Server VM (25.151-b12 mixed mode):
+
+"Attach Listener" #47 daemon prio=9 os_prio=0 tid=0x00007f5674002000 nid=0x7013 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"ActiveMQ BrokerService[localhost] Task-2" #46 daemon prio=5 os_prio=0 tid=0x00007f5680007800 nid=0x6f5e waiting on condition [0x00007f5668bb6000]
+   java.lang.Thread.State: TIMED_WAITING (parking)
+	at sun.misc.Unsafe.park(Native Method)
+	- parking to wait for  <0x00000000f8f94718> (a java.util.concurrent.SynchronousQueue$TransferStack)
+	at java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:215)
+	at java.util.concurrent.SynchronousQueue$TransferStack.awaitFulfill(SynchronousQueue.java:460)
+	at java.util.concurrent.SynchronousQueue$TransferStack.transfer(SynchronousQueue.java:362)
+	at java.util.concurrent.SynchronousQueue.poll(SynchronousQueue.java:941)
+	at java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1073)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1134)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+
+"qtp1979787155-43" #43 prio=5 os_prio=0 tid=0x00007f5698c25000 nid=0x6ec4 waiting on condition [0x00007f5668db8000]
+   java.lang.Thread.State: TIMED_WAITING (parking)
+	at sun.misc.Unsafe.park(Native Method)
+	- parking to wait for  <0x00000000f4b8b620> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+	at java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:215)
+	at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:2078)
+	at org.eclipse.jetty.util.BlockingArrayQueue.poll(BlockingArrayQueue.java:342)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.idleJobPoll(QueuedThreadPool.java:526)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.access$600(QueuedThreadPool.java:44)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:572)
+	at java.lang.Thread.run(Thread.java:748)
+
+(7)获取虚拟机堆栈转储
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jcmd 28291 GC.heap_dump heap_dump.hprof
+28291:
+Heap dump file created
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#
+
+三、Native Memory Tracking(本地内存占用跟踪)
+参考1：https://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/tooldescr007.html
+参考2：http://blog.csdn.net/jicahoo/article/details/50933469
+
+./jcmd 28291 VM.native_memory detail       # 需要JVM启动参数：-XX:NativeMemoryTracking=detail##
+./jcmd 28291 VM.native_memory summary      # 需要JVM启动参数：-XX:NativeMemoryTracking=detail or -XX:NativeMemoryTracking=summary##
+
+./jcmd 28291 VM.native_memory baseline     # 需要JVM启动参数：-XX:NativeMemoryTracking=detail or -XX:NativeMemoryTracking=summary##
+./jcmd 28291 VM.native_memory detail.diff  # 需要JVM启动参数：-XX:NativeMemoryTracking=detail##
+./jcmd 28291 VM.native_memory summary.diff # 需要JVM启动参数：-XX:NativeMemoryTracking=detail or -XX:NativeMemoryTracking=summary##
+
+./jcmd 28291 VM.native_memory shutdown     # 需要JVM启动参数：-XX:NativeMemoryTracking=detail or -XX:NativeMemoryTracking=summary##
+
+注意：
+Enabling NMT will result in a 5-10 percent JVM performance drop and memory usage for NMT adds 2 machine words to all malloc memory as malloc header. NMT memory usage is also tracked by NMT.

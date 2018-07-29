@@ -1,0 +1,11 @@
+GC文件分析工具
+
+主要参数：
+1. GC频率 = Number of all Garbage Collections / (Last Garbage Collection Time - First Garbage Collection Time)
+2. Total Garbage Collection pause
+3. Overhead
+
+这3个是重要的垃圾回收参数，也可以看作为性能指标。
+我们调优的目标就是，期望垃圾回收频率减少，回收中断时间减少，overhead减少。
+但是不可能全理想的，因为这些指标相互制约，如果减少回收次数，有可能中断时间增大，回收耗时增大。业界中的说法是，GC一次间隔时间控制大于10秒，GC一次耗时控制小于500毫秒，overhead控制小于13%。
+如果，我们GC已经很理想了，我们就没有必要去调试，如果不理想，我们怎么办呢？

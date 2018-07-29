@@ -1,0 +1,28 @@
+JProfiler是一款性能问题分析、内存泄露定位工具。
+
+在此之仅讲解下工作中常见的场景：Windows客户端的JProfiler远程监控Linux上的Java服务器
+1. 下载JProfiler：http://www.ej-technologies.com/download/jprofiler/files
+Windows客户端：jprofiler_windows-x64_9_0_2.zip
+Linux客户端：  jprofiler_linux_9_0_2.tar.gz
+
+注：这里Linux客户端只作为一个代理使用，在Java服务器的启动参数中指定代理。其实在Windows客户端创建监控任务的过程中有下载代理包的步骤，限于网络原因不在此下载，因此使用完整的Linux客户端作为代理包使用，缺点就是这个包比较大。其实代理包就是Linux客户端的一部分。
+
+2. 将jprofiler_linux_9_0_2.tar.gz上传Linux的/home目录，再解压此文件tar -zxvf jprofiler_linux_9_0_2.tar.gz
+
+3. 配置Linux上Java的启动参数，并启动Java服务器
+Please insert agent parameter into the start command of your remote application right after the java command.
+# Startup mode: Wait for a connection from the JProfiler GUI
+JAVA_OPTS="$JAVA_OPTS -agentpath:/home/jprofiler9/bin/linux-x64/libjprofilerti.so=port=8849"
+
+# Startup mode: Startup immediately, connect later with the JProfiler GUI
+JAVA_OPTS="$JAVA_OPTS -agentpath:/home/jprofiler9/bin/linux-x64/libjprofilerti.so=port=8849,nowait"
+
+4. 使用Windows客户端连接监控Java服务器
+菜单--Session--Start Center--new Sesion--New Remote Integration--On a remote coomputer(Linux X86/AMD64)--JVM Vendor(Oracle)--Version(Java的实际版本)--Mode(hotspot)--Wait for a connection from the JProfiler GUI或者Startup immediately, connect later with the JProfiler GUI--Remote installation directory(/home/jprofiler9)
+
+
+===================================================================================
+使用JProfiler要注意什么？
+Windows下：run.bat/Catalina.bat加入：JProfiler本身需要消耗很大的本地内存，挂上JProfiler的JVM进行自身对象信息收集也需要消耗大量内存，因此要非常注意Xmx值设置的大小，太小太大都会导致JVM Core Dump。
+JProfiler进行对象信息收集非常消耗CPU，通过压力测试重现问题时压力一定要低，否则会出现很多其他错误，干扰分析结果。
+挂上JProfiler的JVM非常容易Core Dump，最好打开-verbose:gc,随时观察JVM内存使用情况，内存消耗比较大时应减小甚至停止压力测试，立即进行分析。

@@ -1,0 +1,102 @@
+参考：https://docs.oracle.com/javase/8/docs/technotes/tools/unix/java.html
+参考：https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/collectors.html
+参考：http://www.importnew.com/13827.html
+参考：http://xinklabi.iteye.com/blog/1767666
+参考：http://www.cnblogs.com/redcreen/archive/2011/05/04/2037057.html
+参考：https://docs.oracle.com/javase/8/embedded/develop-apps-platforms/codecache.htm
+参考：http://blog.sina.com.cn/s/blog_56d8ea900102w21l.html
+参考：https://blog.csdn.net/zhinengshuowoshule/article/details/54997567
+
+
+使用场景：
+==================================================================
+本参数适用于小型应用，应对内存使用要小(500M)，性能要求不高的场景。
+
+
+优化策略：
+==================================================================
+1. 使用32位的JRE；
+   64位的JRE更耗内存，比如其对象指针为64位。
+
+2. 降低JIT编译优化的程度；
+   注意：虽然降低JIT编译优化的程度，但性能不一定会下降，需要评估并测试。
+   如果业务主要为计算密集型，则该业务的性能会有所降低；
+   如果业务主要为非计算密集型，提高JIT的编译门槛则会降低消耗在JIT编译器上的编译时间，此时有可能会提高业务运行时的性能。
+
+3. 优化GC参数。
+
+
+参数配置：
+==================================================================
+# 内存设置-堆##
+# -Xmx96m             --> 堆内存的最大值##
+# -Xms96m             --> 堆内存的最小值，也是初始值##
+# -Xmn36m             --> 堆内存中新生代的大小##
+# -XX:SurvivorRatio=8 --> Eden区与Survivor区的大小比值。设置为8，则两个Survivor区与一个Eden区的比值为2:8，一个Survivor区占整个年轻代的1/10##
+JAVA_OPTS="$JAVA_OPTS -Xmx96m -Xms96m -Xmn36m -XX:SurvivorRatio=8"
+
+# 内存设置-线程##
+# -Xss256k --> 线程栈大小，JDK5.0以后每个线程堆栈大小为1M，以前每个线程堆栈大小为256K。根据应用的线程所需内存大小进行调整。在相同物理内存下，减小这个值能生成更多的线程。但是操作系统对一个进程内的线程数还是有限制的，不能无限生成，经验值在3000~5000左右。一般小的应用，如果栈不是很深，128k应该是够用的，大的应用建议使用256k。这个选项对性能影响比较大，需要严格的测试。##
+JAVA_OPTS="$JAVA_OPTS -Xss256k"
+
+# 内存设置-元空间##
+# -XX:MetaspaceSize=64m -XX:MaxMetaspaceSize=64m             --> 元数据区的内存初始分配和最大分配限制为64m##
+# -XX:MinMetaspaceFreeRatio=2 -XX:MaxMetaspaceFreeRatio=2    --> 元数据区的内存释放、申请控制配置##
+# -XX:InitialCodeCacheSize=48m -XX:ReservedCodeCacheSize=48m --> 代码缓存区初始配置、最大配置##
+# -XX:CompileThreshold=3000                                  --> 代码缓存区加速策略，如果单位时间内调用方法的次数超过3000次则编译为机器码，进入代码缓存区加速##
+# -XX:+UseCodeCacheFlushing                                  --> 如果代码缓存区满了则清空##
+JAVA_OPTS="$JAVA_OPTS -XX:MetaspaceSize=64m -XX:MaxMetaspaceSize=64m -XX:MinMetaspaceFreeRatio=2 -XX:MaxMetaspaceFreeRatio=2"
+JAVA_OPTS="$JAVA_OPTS -XX:InitialCodeCacheSize=48m -XX:ReservedCodeCacheSize=48m -XX:CompileThreshold=3000 -XX:+UseCodeCacheFlushing"
+
+# 内存设置-直接内存##
+# -XX:MaxDirectMemorySize=24m --> 最大直接内存配置##
+JAVA_OPTS="$JAVA_OPTS -XX:MaxDirectMemorySize=24m"
+
+# 即时编译-提高JIT编译优化的门槛，降低JIT的编译优化程度，减少内存占用##
+# -XX:MaxInlineLevel=1               --> Maximum number of nested calls that are inlined##
+# -XX:InlineSmallCode=25             --> Maximum bytecode size of a method to be inlined##
+# -XX:OnStackReplacePercentage=14000 --> When a method's combined number of backwards branches and invocations reaches or exceeds CompileThreshold * OnStackReplacePercentage / 100, the method is compiled##
+JAVA_OPTS="$JAVA_OPTS -XX:MaxInlineLevel=1 -XX:InlineSmallCode=25 -XX:OnStackReplacePercentage=14000"
+
+# 异常处理##
+# -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$APP_HOME/serviceability/java_heap_dump.hprof --> 当发生OOM时，转储堆##
+# -XX:ErrorFile=$APP_HOME/serviceability/java_irrecoverable_error_%p.log                         --> 当发生不可修复错误时，记录虚拟机崩溃原因到此文件。注意%p最终被翻译成当前进程号##
+# -XX:OnError=string                                                                             --> Sets a custom command or a series of semicolon-separated commands to run when an irrecoverable error occurs. If the string contains spaces, then it must be enclosed in quotation marks##
+# -XX:OnOutOfMemoryError=string                                                                  --> Sets a custom command or a series of semicolon-separated commands to run when an OutOfMemoryError exception is first thrown. If the string contains spaces, then it must be enclosed in quotation marks. For an example of a command string, see the description of the -XX:OnError option##
+JAVA_OPTS="$JAVA_OPTS -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$APP_HOME/serviceability/java_heap_dump.hprof"
+JAVA_OPTS="$JAVA_OPTS -XX:ErrorFile=$APP_HOME/serviceability/java_irrecoverable_error_%p.log"
+
+# GC设置##
+# -XX:+UseSerialGC --> 使用单线程垃圾回收，应用内存只有几百M的量级，使用单线程垃圾回收已经足够使用，也可以节省线程数量##
+JAVA_OPTS="$JAVA_OPTS -XX:+UseSerialGC"
+
+# GC日志设置##
+# -XX:+PrintGCDetails                          --> 输出GC的详细日志##
+# -XX:+PrintGCDateStamps                       --> 输出GC的时间戳(以日期的形式，如2013-05-04T21:53:59.234+0800)##
+# -XX:+PrintGCTimeStamps                       --> 输出GC的时间戳(以基准时间的形式，当程序启动开始计时)##
+# -XX:+PrintGCCause                            --> 输出GC的原因##
+# -XX:+PrintHeapAtGC                           --> 在进行GC的前后打印出堆的信息##
+# -XX:+PrintGCApplicationConcurrentTime        --> 打印每次垃圾回收前,程序未中断的执行时间##
+# -XX:+PrintGCApplicationStoppedTime           --> 垃圾回收期间程序暂停的时间##
+# -Xloggc:$APP_HOME/serviceability/java_gc.log --> 日志文件的输出路径##
+# -XX:+UseGCLogFileRotation                    --> 启用GC日志文件的自动转储(Since Java7)##
+# -XX:NumberOfGCLogFiles=10                    --> GC日志文件的循环数目(Since Java7)##
+# -XX:GCLogFileSize=10M                        --> 控制GC日志文件的大小(Since Java7)##
+JAVA_OPTS="$JAVA_OPTS -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintGCCause -XX:+PrintHeapAtGC"
+JAVA_OPTS="$JAVA_OPTS -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCApplicationStoppedTime"
+JAVA_OPTS="$JAVA_OPTS -Xloggc:$APP_HOME/serviceability/java_gc.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=10M"
+
+# 其他设置##
+# -server                                                             --> 以服务器模式运行虚拟机##
+# -XX:+PrintCommandLineFlags                                          --> 打印出JVM初始化完毕后所有跟最初的默认值不同的参数及它们的值，JDK1.5后支持##
+# -XX:+PrintFlagsFinal                                                --> 打印JVM参数到日志中##
+# -XX:+UnlockDiagnosticVMOptions                                      --> 避免OSGi环境下并发加载类的死锁问题##
+# -XX:+UnsyncloadClass                                                --> 避免OSGi环境下并发加载类的死锁问题##
+# -XX:-OmitStackTraceInFastThrow                                      --> 强制要求JVM始终抛出含堆栈的异常，如果不设置则jvm会对内置的异常抛出流程进行优化，如果在一定的时间抛出过多，则不打印堆栈##
+# -XX:+TraceClassLoading -XX:+TraceClassUnloading                     --> 跟踪元数据区的类加载卸载情况，用于诊断元数据区是否存在溢出##
+# -XX:+LogVMOutput -XX:LogFile=$APP_HOME/serviceability/java_info.log --> JVM日志，kill -3后，线程转储到此文件中##
+# -Dfile.encoding=UTF-8                                               --> 指定处理文件时的默认编码，如果不设置则以操作系统的语言为准##
+JAVA_OPTS="$JAVA_OPTS -server -XX:+PrintCommandLineFlags -XX:+PrintFlagsFinal"
+JAVA_OPTS="$JAVA_OPTS -XX:-OmitStackTraceInFastThrow -XX:+TraceClassLoading -XX:+TraceClassUnloading"
+JAVA_OPTS="$JAVA_OPTS -XX:+LogVMOutput -XX:LogFile=$APP_HOME/serviceability/java_info.log"
+JAVA_OPTS="$JAVA_OPTS -Dfile.encoding=UTF-8"

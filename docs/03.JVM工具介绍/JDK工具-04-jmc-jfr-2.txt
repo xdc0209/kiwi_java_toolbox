@@ -1,0 +1,129 @@
+# 检查商用特性是否开启的帮助。##
+root@linux:/home/kiwi_java_toolbox/bin# ./jcmd.sh 23331 help VM.check_commercial_features
+23331:
+VM.check_commercial_features
+Display status of commercial features
+
+Impact: Low: No impact
+
+Syntax: VM.check_commercial_features
+root@linux:/home/kiwi_java_toolbox/bin#
+
+
+# 开启商用特性的帮助。##
+root@linux:/home/kiwi_java_toolbox/bin# ./jcmd.sh 23331 help VM.unlock_commercial_features
+23331:
+VM.unlock_commercial_features
+Unlock commercial features
+
+Impact: Low: No impact
+
+Permission: java.lang.management.ManagementPermission(control)
+
+Syntax: VM.unlock_commercial_features
+root@linux:/home/kiwi_java_toolbox/bin#
+
+
+# 启动一个jfr任务的帮助。##
+root@linux:/home/kiwi_java_toolbox/bin# ./jcmd.sh 23331 help JFR.start
+23331:
+JFR.start
+Starts a new JFR recording
+
+Impact: Medium: Depending on the settings for a recording, the impact can range from low to high.
+
+Permission: java.lang.management.ManagementPermission(monitor)
+
+Syntax : JFR.start [options]
+
+Options: (options must be specified using the <key> or <key>=<value> syntax)
+    name : [optional] Name that can be used to identify recording, e.g. \"My Recording\" (STRING, no default value)
+    defaultrecording : [optional] Starts the default recording, can only be combined with settings. (BOOLEAN, false)
+    dumponexit : [optional] Dump running recording when JVM shuts down (BOOLEAN, no default value)
+    settings : [optional] Settings file(s), e.g. profile or default. See JRE_HOME/lib/jfr (STRING SET, no default value)
+    delay : [optional] Delay recording start with (s)econds, (m)inutes), (h)ours), or (d)ays, e.g. 5h. (NANOTIME, 0)
+    duration : [optional] Duration of recording in (s)econds, (m)inutes, (h)ours, or (d)ays, e.g. 300s. (NANOTIME, 0)
+    filename : [optional] Resulting recording filename, e.g. \"/home/user/My Recording.jfr\" (STRING, no default value)
+    compress : [optional] GZip-compress the resulting recording file (BOOLEAN, false)
+    maxage : [optional] Maximum time to keep recorded data (on disk) in (s)econds, (m)inutes, (h)ours, or (d)ays, e.g. 60m, or 0 for no limit (NANOTIME, 0)
+    maxsize : [optional] Maximum amount of bytes to keep (on disk) in (k)B, (M)B or (G)B, e.g. 500M, or 0 for no limit (MEMORY SIZE, 0)
+root@linux:/home/kiwi_java_toolbox/bin#
+
+参数详细介绍：
+name：名称。
+defaultrecording：网上查到的东西都不是很清晰，这个作用不大，不用详细了解。
+dumponexit：java程序退出时，转储飞行记录的任务产生的数据。
+settings：指定记录java事件的模板，记录哪些事件，不记录哪些文件。java提供了两个内置的模板default和profile(在$JAVA_HOME/jre/lib/jfr目录中)。这个参数可以是一个全路径指定自定义的模板文件或者说java内置的模板名称default和profile。Note that the settings parameter either takes a path to a template, or the name of a template which must be available in the jre/lib/jfr folder of the JVM.
+delay：任务开始延迟。
+duration：任务执行时间，时间到了，任务会停止。固定时长记录模式使用此参数，指定此参数后maxage和maxsize都是失效的。
+filename：转储文件路径，java程序退出(指定dumponexit时)或者任务结束(指定duration时)，都会写入此文件路径。
+compress：转储记录时，压缩转储后的jfr文件。
+maxage：持续记录模式，限制磁盘中的缓存记录的最大时长。
+maxsize：持续记录模式，限制磁盘中的缓存记录的最大大小。
+
+简单说下记录模式：
+(1)固定时长记录模式：
+通过参数duration指定时长，时间到了，任务就会停止。数据缓存在内存中(会不会定期在转存到磁盘还没查到资料，但可以确认的是使用的内存不是堆内存，而是jvm直接向操作系统申请的内存，所以不会影响堆内存的分析)，如果指定了filename，当任务结束后会自动将缓存的数据写入filename指定的jfr文件。另外，在任务未结束时，也可以随时使用JFR.dump获取jfr文件。
+
+(2)持续记录模式：
+在未指定参数duration时，任务不会停止，所以叫持续记录模式。可以随时使用JFR.dump停止，使用JFR.stop停止。同样此模式也是缓存的，也没有使用堆内存。此模式下在内存中开启少量内存，写满后在flush到磁盘。缓存文件默认在java的临时目录。可以使用maxage和maxsize限制文件过大。
+
+
+# 查看jfr任务的帮助。##
+root@linux:/home/kiwi_java_toolbox/bin# ./jcmd.sh 23331 help JFR.check
+23331:
+JFR.check
+Checks running JFR recording(s)
+
+Impact: Low
+
+Permission: java.lang.management.ManagementPermission(monitor)
+
+Syntax : JFR.check [options]
+
+Options: (options must be specified using the <key> or <key>=<value> syntax)
+    name : [optional] Recording name, e.g. \"My Recording\" or omit to see all recordings (STRING, no default value)
+    recording : [optional] Recording number, or omit to see all recordings (JLONG, -1)
+    verbose : [optional] Print event settings for the recording(s) (BOOLEAN, false)
+root@linux:/home/kiwi_java_toolbox/bin#
+
+
+# 转储一个jfr任务的帮助。##
+root@linux:/home/kiwi_java_toolbox/bin# ./jcmd.sh 23331 help JFR.dump
+23331:
+JFR.dump
+Copies contents of a JFR recording to file. Either the name or the recording id must be specified.
+
+Impact: Low
+
+Permission: java.lang.management.ManagementPermission(monitor)
+
+Syntax : JFR.dump [options]
+
+Options: (options must be specified using the <key> or <key>=<value> syntax)
+    name : [optional] Recording name, e.g. \"My Recording\" (STRING, no default value)
+    recording : [optional] Recording number, use JFR.check to list available recordings (JLONG, -1)
+    filename :  Copy recording data to file, i.e \"/home/user/My Recording.jfr\" (STRING, no default value)
+    compress : [optional] GZip-compress "filename" destination (BOOLEAN, false)
+root@linux:/home/kiwi_java_toolbox/bin#
+
+
+# 停止一个jfr任务的帮助。##
+root@linux:/home/kiwi_java_toolbox/bin# ./jcmd.sh 23331 help JFR.stop
+23331:
+JFR.stop
+Stops a JFR recording
+
+Impact: Low
+
+Permission: java.lang.management.ManagementPermission(monitor)
+
+Syntax : JFR.stop [options]
+
+Options: (options must be specified using the <key> or <key>=<value> syntax)
+    name : [optional] Recording name,.e.g \"My Recording\" (STRING, no default value)
+    recording : [optional] Recording number, see JFR.check for a list of available recordings (JLONG, -1)
+    discard : [optional] Skip writing data to previously specified file (if any) (BOOLEAN, false)
+    filename : [optional] Copy recording data to file, e.g. \"/home/user/My Recording.jfr\" (STRING, no default value)
+    compress : [optional] GZip-compress "filename" destination (BOOLEAN, false)
+root@linux:/home/kiwi_java_toolbox/bin#

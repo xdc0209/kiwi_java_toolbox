@@ -1,0 +1,5 @@
+jhat
+jhat是用来分析java堆的命令，可以将堆中的对象以html的形式显示出来，包括对象的数量，大小等等，并支持对象查询语言。
+一般来说，应用程序的dump文件都是很大的，jdk自带命令难以分析这些大文件。在实际的生产环境下，我们必须要借助第三方工具(如eclipse memory analyzer tool)，才能快速打开这些大文件，进行分析定位。
+(1) 启动服务：jhat -port 5000 heap_dump.hprof
+(2) 在浏览器中，通过http://localhost:5000/进行访问

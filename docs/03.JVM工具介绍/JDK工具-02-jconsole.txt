@@ -1,0 +1,13 @@
+jconsole
+一个图形化工具，功能不具体介绍，在界面比较简单。
+推荐使用升级版jconsole，即jvisualvm。jconsole中的大部分功能，jvisualvm都有，并且实现的更好。其他一小部分不自带的功能，也可以通过安装插件实现。
+
+简单介绍下jconsole插件的使用：
+=================================================================================
+在JDK的样例代码包中有一款叫Jtop的插件，用于监控Java线程的CPU占用排序(注意阿里的同事也有一款同名的Java监控程序jtop，不是jconsole的插件，是一个独立运行的jar，功能很强大)。
+
+包路径：
+jdk-7u79-windows-i586-demos.zip\jdk1.7.0_79\demo\management\JTop\JTop.jar
+
+启动时加载插件：
+jconsole -pluginpath C:\Java\jdk1.7.0_79\demo\management\JTop\JTop.jar

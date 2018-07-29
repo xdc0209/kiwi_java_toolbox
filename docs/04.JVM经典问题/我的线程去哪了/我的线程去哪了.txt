@@ -1,0 +1,29 @@
+摘自：https://www.ibm.com/developerworks/cn/java/j-jtp0924/
+
+在单线程应用程序中的主线程抛出一个未捕获的异常时，因为控制台中会打印堆栈跟踪(也因为程序停止)，所以您很可能注意到。
+但在多线程应用程序中，尤其是在作为服务器运行并且不与控制台相连的应用程序中，线程死亡可能成为不太引人注目的事件(悄悄地走了，不留一丝痕迹，好像从来没有来过)，这会导致局部系统失败，从而产生混乱的应用程序行为。
+
+/**
+ * 为了避免线程因异常而不留痕迹地消失，将业务代码都放在try-catch执行。
+ */
+class RunnableImpl implements Runnable
+{
+    // 这个应该是规范的写法，如果不这么写，出错很难发现。
+    public void run()
+    {
+        try
+        {
+            // dosomething
+        }
+        // 要捕获java.lang.Throwable，不能捕获java.lang.Exception，否则会遗漏java.lang.OutOfMemoryError: unable to create new native thread等。
+        catch (Throwable e)
+        {
+            // log and throw
+            throw e;
+        }
+        finally
+        {
+            // do some cleaning, close io and so on
+        }
+    }
+}

@@ -1,0 +1,22 @@
+jps：虚拟机进程列表
+JDK的很多小工具的名称都参考了Unix命令的命名方式，jps(JVM Process Status Tool)是其中的典型。
+jps(Java Virtual Machine Process Status Tool)是JDK 1.5提供的一个显示当前所有java进程pid的命令，简单实用，非常适合在linux/unix平台上简单察看当前java进程的一些简单情况。
+除了名字像Unix的ps命令外，功能也和ps类似：可以列出正在运行的虚拟机进程，并显示虚拟机执行主类(Main Class，main()函数所在的类)的名称，以及这些进程的本地虚拟机的唯一ID(LVMID，Local Virtual Machine Identifier)。
+虽然功能比较单一，但它是使用频率最高的JDK命令行工具，因为其他JDK工具大多需要输入它查询到的LVMID来确定要监控的是哪一个虚拟机进程。对于本地虚拟机进程来说，LVMID与操作系统的进程ID(PID，Process Identifier)是一致的，使用Windows的任务管理器或Unix的ps命令也可以查询到虚拟机进程的LVMID，但如果使用了多个虚拟机进程，无法根据进程名称定位时，那就只能依赖jps命令显示主类的功能区才能区分了。
+优点是可以显示详细的java进程信息和类路径等。
+缺点是该方法需要JDK，可以使用ps替代：ps -ef | grep -inr --color "java"
+另外，jps工具用来列出目标系统上的当前用户启动的虚拟机，特别当虚拟机是内嵌的，即虚拟机是通过JNI被启动的而不是通过java启动器启动的(即java命令行)，这个工具非常用用，在这种内置启动虚拟机的情况下，通常是不容易在进程列表中识别出虚拟机。
+
+(1) jps命令格式：
+jps [option] [hostid]
+选项 作用
+-q   只输出LVMID，省略主类的名称
+-m   输出虚拟机进程启动时传递给主类的main()函数的参数，在嵌入式jvm上可能是null
+-l   输出主类的全名，如果进程执行的是jar包，输出jar路径
+-v   输出虚拟机进程启动时JVM参数
+
+(2) jps执行样例：
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin# ./jps -mlv
+28291 /opt/kiwi_world/apache-activemq-5.11.1/bin/activemq.jar start -Djava.awt.headless=true -Djava.io.tmpdir=/opt/kiwi_world/apache-activemq-5.11.1/tmp -Dactivemq.classpath=/opt/kiwi_world/apache-activemq-5.11.1/conf: -Dactivemq.home=/opt/kiwi_world/apache-activemq-5.11.1 -Dactivemq.base=/opt/kiwi_world/apache-activemq-5.11.1 -Dactivemq.conf=/opt/kiwi_world/apache-activemq-5.11.1/conf -Dactivemq.data=/opt/kiwi_world/apache-activemq-5.11.1/data
+29022 sun.tools.jps.Jps -mlv -Dapplication.home=/opt/kiwi_world/jdk-1.8.0_151 -Xms8m
+root@linux:/opt/kiwi_world/jdk-1.8.0_151/bin#

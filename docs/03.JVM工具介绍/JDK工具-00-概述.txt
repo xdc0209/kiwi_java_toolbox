@@ -1,0 +1,62 @@
+参考：http://docs.oracle.com/javase/7/docs/technotes/tools/index.html#troubleshoot
+
+概述：
+====================================================================================
+JDK是一个功能强大的Java开发套装，它不仅仅为我们提供了Java运行环境，还给开发人员提供了许多有用的开发组件。仅仅使用JDK，就能够解决我们在Java开发过程中遇到的许多问题。
+
+名词翻译：
+====================================================================================
+问题定位(Troubleshooting)
+性能分析(Profiling)
+监控(Monitoring)
+管理工具(Management Tools)
+
+Sun JDK监控和故障处理工具：
+====================================================================================
+1. Java Troubleshooting, Profiling, Monitoring and Management Tools
+   工具名称   简要说明
+   jcmd       JVM诊断命令工具。发送一个诊断命令请求给一个JVM。可以获得当前vm的各种信息、触发线程dump、触发堆dmup等。
+   jconsole   一个符合JMX规范的图形化工具，可以用来监控和管理Java虚拟机。可以监控本地和远程的JVM。
+   jmc        Java Mission Control，图形化的监控和管理工具，跟jvisualvm功能上有很多重合，但展现上不太相同。官网介绍中提到了一句：基本不引入性能开销。
+   jvisualvm  可以看作是jconsole的升级版，jconsole中的大部分功能他都有，并且实现的更好。其他一小部分不自带的功能，也可以通过安装插件实现。
+
+2. Monitoring Tools
+   工具名称   简要说明
+   jps        Experimental: JVM Process Status Tool        --命名规则参考了linux中的ps。查看系统中的Java进程。
+   jstat      Experimental: JVM Statistics Monitoring Tool --附加到一个被监测的HotSpotJVM中，然后收集和记录命令行中指定的性能统计数据。
+   jstatd     Experimental: JVM jstat Daemon               --JVM jstat守护进程。启动一个RMI服务器应用程序，监控被监测的HotSpot JVM的创建和终止。提供一个接口允许远程监控工具附加到本地正在运行的JVM中。
+
+3. Troubleshooting Tools
+   工具名称   简要说明
+   jinfo      Experimental: Configuration Info for Java                --显示虚拟机配置信息。
+   jhat       Experimental: Heap Dump Browser                          --用于分析heapdump文件，它会建立一个HTTP/HTML服务器，让用户可以在浏览器上查看分析结果。
+   jmap       Experimental: Memory Map for Java                        --生成虚拟机的内存转储快照(heapdump)文件。
+   jsadebugd  Experimental: Serviceability Agent Debug Daemon for Java --Java的代理调试守护进程。附加到一个进程、核心文件或者作为一个调试服务器。诸如 jstack、jmap 和 jinfo 这样的远程客户机可以通过 Java RMI 连接到这种服务器上。
+   jstack     Experimental: Stack Trace for Java                       --显示虚拟机的线程快照。
+
+注意：
+====================================================================================
+在官网中对jconsole的介绍中有：Both JConsole and the application must by executed by the same user, since the monitoring and management system uses the operating system's file permissions.
+这个说名明了JDK的工具和待监控的Java程序要使用同一用户，否则无法进行监控。这个很重要，初学者大部分会遇到这个问题。
+
+在Linux服务器上使用JDK的图形工具：
+====================================================================================
+1. 安装Xshell 4，Xshell提供了将Linux上的窗口显示在Windows上的功能。
+2. 使用Xshell，以业务服务运行用户(即ps查到的Java进程的用户，以下简称业务用户)登录Linux服务器，切记：不能先以root登录再切换用户，不然图形组件无法生效，Java工具打开失败。
+3. 一般业务运行的Java环境为JRE，我们定位问题需要JDK工具，需要现在下载对应版本的JDK，最好保证小版本号也一致。
+4. 以业务用户上传JDK，并解压，修改权限为777，以免权限问题导致工具打开失败。
+5. 执行$JDK_HOME/bin/*，就可以看到对应的Java的图形工具了。
+
+注意1：
+最后重申一遍，确保直接登录业务用户，再进行所有操作，这样一般就不会有问题。
+1. 不能登陆后使用su命令切换用户。
+2. 不能使用跳板机进行ssh中转。
+
+注意2：
+一般是OS都安装了xorg/gnome的组件，可以和Xshell配合，打开图形化界面，否则的话需要自己对比正常环境，把xorg/gnome的组件安装齐全。
+
+如果使用root登录再su的话，报错如下：
+root@linux:~# su - kiwi
+kiwi@linux:~$ /opt/kiwi_world/jdk-1.8.0_151/bin/jvisualvm
+/opt/kiwi_world/jdk-1.8.0_151/lib/visualvm/platform/lib/nbexec: WARNING: environment variable DISPLAY is not set
+kiwi@linux:~$
