@@ -1,0 +1,16 @@
+飞行记录测试用例：
+
+# 确保飞行记录关闭：##
+sh java_flight_recorder.sh stop  <java_pid>
+
+# 关闭状态下测试：##
+sh java_flight_recorder.sh check <java_pid>
+sh java_flight_recorder.sh dump  <java_pid>
+sh java_flight_recorder.sh stop  <java_pid>
+sh java_flight_recorder.sh start <java_pid>
+
+# 开启状态下测试：##
+sh java_flight_recorder.sh start <java_pid>
+sh java_flight_recorder.sh check <java_pid>
+sh java_flight_recorder.sh dump  <java_pid>
+sh java_flight_recorder.sh stop  <java_pid>
